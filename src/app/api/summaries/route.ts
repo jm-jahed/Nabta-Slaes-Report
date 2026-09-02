@@ -8,24 +8,39 @@ export async function GET(req: Request) {
 
   if (!isSupabaseConfigured()) {
     let summaries = LocalFS.getDaySummaries();
+    const allOrders = LocalFS.getOrders();
+    const allPayments = LocalFS.getPayments();
+
     if (dateStr) {
-      let summary = summaries.find((s: any) => s.date === dateStr);
-      if (!summary) {
-        const orders = LocalFS.getOrders().filter((o: any) => o.date === dateStr);
-        const payments = LocalFS.getPayments().filter((p: any) => p.date === dateStr);
-        const jahed_balance = orders.reduce((s: number, o: any) => s + (o.jahed_balance || 0), 0);
-        const paid = payments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
-        
-        let prevSummary = summaries.filter((s: any) => s.date < dateStr).sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
-        const nabta_yesterday_balance = prevSummary ? prevSummary.nabta_today_balance : 5000;
-        const nabta_today_balance = nabta_yesterday_balance - jahed_balance - paid;
-        
-        summary = { date: dateStr, nabta_yesterday_balance, jahed_balance, paid, nabta_today_balance, updated_at: new Date().toISOString() };
-        summaries.push(summary);
-        LocalFS.saveDaySummaries(summaries);
+      const storedSummary = summaries.find((s: any) => s.date === dateStr);
+
+      // Always recalculate from live orders to keep Admin and Nabta in sync
+      const orders = allOrders.filter((o: any) => o.date === dateStr);
+      const payments = allPayments.filter((p: any) => p.date === dateStr);
+      const jahed_balance = Number(orders.reduce((s: number, o: any) => s + (o.jahed_balance || 0), 0).toFixed(2));
+      const paid = Number(payments.reduce((s: number, p: any) => s + (p.amount || 0), 0).toFixed(2));
+
+      // Use stored opening balance if available, otherwise carry from previous day
+      let nabta_yesterday_balance: number;
+      if (storedSummary?.nabta_yesterday_balance !== undefined) {
+        nabta_yesterday_balance = Number(storedSummary.nabta_yesterday_balance);
+      } else {
+        const prevSummary = summaries.filter((s: any) => s.date < dateStr).sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
+        nabta_yesterday_balance = prevSummary ? Number(prevSummary.nabta_today_balance) : 5000;
       }
+
+      const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance - paid).toFixed(2));
+      const summary = { date: dateStr, nabta_yesterday_balance, jahed_balance, paid, nabta_today_balance, updated_at: new Date().toISOString() };
+
+      // Update stored summary with fresh calculation
+      const idx = summaries.findIndex((s: any) => s.date === dateStr);
+      if (idx !== -1) { summaries[idx] = summary; } else { summaries.push(summary); }
+      LocalFS.saveDaySummaries(summaries);
+
       return NextResponse.json(summary);
     }
+
+    // For the full map, recalculate each day live
     const map: Record<string, any> = {};
     summaries.forEach((s: any) => { map[s.date] = s; });
     return NextResponse.json(map);
