@@ -75,7 +75,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Local / Demo Authentication check
-    if (password.length >= 4) {
+    if ((email === 'jahed2uae' || email === 'jahed2uae@salesreport.ae') && password === 'asdASD123@') {
+      const adminUser: UserProfile = {
+        id: 'admin-' + Date.now(),
+        email: 'jahed2uae',
+        name: 'Jahed Admin',
+        role: 'admin',
+      };
+      setUser(adminUser);
+      localStorage.setItem('sales_reports_user', JSON.stringify(adminUser));
+      setIsLoading(false);
+      return { success: true };
+    }
+    
+    if (password.length >= 4 && email.includes('@')) {
       const adminUser: UserProfile = {
         id: 'admin-' + Date.now(),
         email: email,
@@ -86,9 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('sales_reports_user', JSON.stringify(adminUser));
       setIsLoading(false);
       return { success: true };
-    } else {
-      setIsLoading(false);
-      return { success: false, error: 'Password must be at least 4 characters.' };
+    } else if (password !== 'asdASD123@') {
+        setIsLoading(false);
+        return { success: false, error: 'Invalid username or password.' };
     }
   };
 
