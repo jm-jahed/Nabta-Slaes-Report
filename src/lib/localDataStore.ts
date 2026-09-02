@@ -141,6 +141,32 @@ const INITIAL_ORDERS = [
     jahed_balance: 48,
     notes: "",
     created_at: "2026-09-02T08:30:00.000Z"
+  },
+  {
+    id: "ord-20260902-5",
+    date: "2026-09-02",
+    client_name: "Villago",
+    qty: 20,
+    cost_price: 4,
+    client_price: 6,
+    nabta_bill: 80,
+    client_bill: 120,
+    jahed_balance: 40,
+    notes: "",
+    created_at: "2026-09-02T08:40:00.000Z"
+  },
+  {
+    id: "ord-20260902-6",
+    date: "2026-09-02",
+    client_name: "Sahelnom",
+    qty: 30,
+    cost_price: 4,
+    client_price: 5,
+    nabta_bill: 120,
+    client_bill: 150,
+    jahed_balance: 30,
+    notes: "",
+    created_at: "2026-09-02T08:50:00.000Z"
   }
 ];
 
@@ -156,9 +182,9 @@ const INITIAL_SUMMARIES = [
   {
     date: "2026-09-02",
     nabta_yesterday_balance: -164.2,
-    jahed_balance: 108,
+    jahed_balance: 178,
     paid: 0,
-    nabta_today_balance: -272.2,
+    nabta_today_balance: -342.2,
     updated_at: "2026-09-02T09:00:00.000Z"
   }
 ];
