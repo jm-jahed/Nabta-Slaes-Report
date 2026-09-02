@@ -11,94 +11,27 @@ function writeJson(filename, data) {
   fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2));
 }
 
-function readJson(filename) {
-  try {
-    const p = path.join(DATA_DIR, filename);
-    if (fs.existsSync(p)) {
-      return JSON.parse(fs.readFileSync(p, 'utf8'));
-    }
-  } catch (e) {}
-  return [];
-}
-
-const orders = readJson('orders.json');
-const summaries = readJson('summaries.json');
-
-const dateStr = "2026-09-01";
-
-// Remove existing orders for this date
-const filteredOrders = orders.filter(o => o.date !== dateStr);
-
-const newOrders = [
-  {
-    id: "ord-" + Date.now() + "-1",
-    date: dateStr,
-    client_name: "Abu Al Joud",
-    qty: 25,
-    cost_price: 4,
-    client_price: 4.5,
-    nabta_bill: 100,
-    client_bill: 112.5,
-    jahed_balance: 12.5,
-    notes: "",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "ord-" + Date.now() + "-2",
-    date: dateStr,
-    client_name: "Al Mallah",
-    qty: 25,
-    cost_price: 4,
-    client_price: 4.5,
-    nabta_bill: 100,
-    client_bill: 112.5,
-    jahed_balance: 12.5,
-    notes: "",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "ord-" + Date.now() + "-3",
-    date: dateStr,
-    client_name: "Khalifa Sharjah",
-    qty: 70,
-    cost_price: 3,
-    client_price: 3.5,
-    nabta_bill: 210,
-    client_bill: 245,
-    jahed_balance: 35,
-    notes: "",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "ord-" + Date.now() + "-4",
-    date: dateStr,
-    client_name: "Xender Peeled",
-    qty: 120,
-    cost_price: 3.6,
-    client_price: 4,
-    nabta_bill: 432,
-    client_bill: 480,
-    jahed_balance: 48,
-    notes: "",
-    created_at: new Date().toISOString()
-  }
+const orders1 = [
+  { id: "ord-20260901-1", date: "2026-09-01", client_name: "Abu Al Joud", qty: 25, cost_price: 4, client_price: 4.5, nabta_bill: 100, client_bill: 112.5, jahed_balance: 12.5, notes: "", created_at: "2026-09-01T08:00:00.000Z" },
+  { id: "ord-20260901-2", date: "2026-09-01", client_name: "Al Mallah", qty: 25, cost_price: 4, client_price: 4.5, nabta_bill: 100, client_bill: 112.5, jahed_balance: 12.5, notes: "", created_at: "2026-09-01T08:10:00.000Z" },
+  { id: "ord-20260901-3", date: "2026-09-01", client_name: "Khalifa Sharjah", qty: 70, cost_price: 3, client_price: 3.5, nabta_bill: 210, client_bill: 245, jahed_balance: 35, notes: "", created_at: "2026-09-01T08:20:00.000Z" },
+  { id: "ord-20260901-4", date: "2026-09-01", client_name: "Xender Peeled", qty: 120, cost_price: 3.6, client_price: 4, nabta_bill: 432, client_bill: 480, jahed_balance: 48, notes: "", created_at: "2026-09-01T08:30:00.000Z" },
 ];
 
-writeJson('orders.json', [...filteredOrders, ...newOrders]);
+const orders2 = [
+  { id: "ord-20260902-1", date: "2026-09-02", client_name: "Abu Al Joud", qty: 25, cost_price: 4, client_price: 4.5, nabta_bill: 100, client_bill: 112.5, jahed_balance: 12.5, notes: "", created_at: "2026-09-02T08:00:00.000Z" },
+  { id: "ord-20260902-2", date: "2026-09-02", client_name: "Al Mallah", qty: 25, cost_price: 4, client_price: 4.5, nabta_bill: 100, client_bill: 112.5, jahed_balance: 12.5, notes: "", created_at: "2026-09-02T08:10:00.000Z" },
+  { id: "ord-20260902-3", date: "2026-09-02", client_name: "Khalifa Sharjah", qty: 70, cost_price: 3, client_price: 3.5, nabta_bill: 210, client_bill: 245, jahed_balance: 35, notes: "", created_at: "2026-09-02T08:20:00.000Z" },
+  { id: "ord-20260902-4", date: "2026-09-02", client_name: "Xender Peeled", qty: 120, cost_price: 3.6, client_price: 4, nabta_bill: 432, client_bill: 480, jahed_balance: 48, notes: "", created_at: "2026-09-02T08:30:00.000Z" },
+];
 
-const validSummaries = Array.isArray(summaries) ? summaries : Object.values(summaries || {});
-const filteredSummaries = validSummaries.filter(s => s.date !== dateStr);
-const jahed_balance = newOrders.reduce((acc, curr) => acc + curr.jahed_balance, 0);
+writeJson('orders.json', [...orders1, ...orders2]);
 
-const newSummary = {
-  date: dateStr,
-  nabta_yesterday_balance: -56.2,
-  jahed_balance: jahed_balance,
-  paid: 0,
-  nabta_today_balance: -56.2 - jahed_balance,
-  updated_at: new Date().toISOString()
-};
+const summaries = [
+  { date: "2026-09-01", nabta_yesterday_balance: -56.2, jahed_balance: 108, paid: 0, nabta_today_balance: -164.2, updated_at: "2026-09-01T09:00:00.000Z" },
+  { date: "2026-09-02", nabta_yesterday_balance: -164.2, jahed_balance: 108, paid: 0, nabta_today_balance: -272.2, updated_at: "2026-09-02T09:00:00.000Z" },
+];
 
-writeJson('summaries.json', [...filteredSummaries, newSummary]);
+writeJson('summaries.json', summaries);
 
-console.log("Seed complete.");
+console.log("Seed complete with 1 Sep and 2 Sep 2026 data.");
