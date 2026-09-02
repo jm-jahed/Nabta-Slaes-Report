@@ -45,7 +45,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'viewer';
+  role: 'admin' | 'viewer' | 'nabta';
 }
 
 export interface DashboardStats {

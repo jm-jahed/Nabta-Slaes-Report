@@ -19,7 +19,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check local session
+    // Check if session cookie is present or just rely on localStorage for client-side state
+    // But Vercel edge doesn't let us read HTTP-only cookies in client components easily.
+    // We will just read the stored user from localStorage for UI hydration.
+    // The middleware will actually protect the routes securely.
     const storedUser = localStorage.getItem('sales_reports_user');
     if (storedUser) {
       try {
@@ -27,16 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         localStorage.removeItem('sales_reports_user');
       }
-    } else {
-      // Default to logged-in Admin in demo / local mode for friction-free initial review
-      const defaultAdmin: UserProfile = {
-        id: 'usr-admin-01',
-        email: 'admin@salesreport.ae',
-        name: 'Jahed Admin',
-        role: 'admin',
-      };
-      setUser(defaultAdmin);
-      localStorage.setItem('sales_reports_user', JSON.stringify(defaultAdmin));
     }
     setIsLoading(false);
   }, []);
@@ -44,73 +37,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
 
-    // If Supabase is connected
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-        if (error) {
-          setIsLoading(false);
-          return { success: false, error: error.message };
-        }
-
-        if (data.user) {
-          const profile: UserProfile = {
-            id: data.user.id,
-            email: data.user.email || email,
-            name: data.user.user_metadata?.full_name || email.split('@')[0],
-            role: 'admin',
-          };
-          setUser(profile);
-          localStorage.setItem('sales_reports_user', JSON.stringify(profile));
-          setIsLoading(false);
-          return { success: true };
-        }
-      } catch (err: any) {
-        console.error('Supabase login failed, using local auth:', err);
-      }
-    }
-
-    // Local / Demo Authentication check
-    if ((email === 'jahed2uae' || email === 'jahed2uae@salesreport.ae') && password === 'asdASD123@') {
-      const adminUser: UserProfile = {
-        id: 'admin-' + Date.now(),
-        email: 'jahed2uae',
-        name: 'Jahed Admin',
-        role: 'admin',
-      };
-      setUser(adminUser);
-      localStorage.setItem('sales_reports_user', JSON.stringify(adminUser));
-      setIsLoading(false);
-      return { success: true };
-    }
-    
-    if (password.length >= 4 && email.includes('@')) {
-      const adminUser: UserProfile = {
-        id: 'admin-' + Date.now(),
-        email: email,
-        name: email.includes('admin') ? 'Jahed Admin' : email.split('@')[0],
-        role: 'admin',
-      };
-      setUser(adminUser);
-      localStorage.setItem('sales_reports_user', JSON.stringify(adminUser));
-      setIsLoading(false);
-      return { success: true };
-    } else if (password !== 'asdASD123@') {
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setUser(data.user);
+        localStorage.setItem('sales_reports_user', JSON.stringify(data.user));
         setIsLoading(false);
-        return { success: false, error: 'Invalid username or password.' };
+        return { success: true };
+      } else {
+        setIsLoading(false);
+        return { success: false, error: data.error || 'Invalid credentials.' };
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      return { success: false, error: 'Network error during login.' };
     }
   };
 
   const logout = async () => {
-    if (isSupabaseConfigured() && supabase) {
-      await supabase.auth.signOut();
-    }
+    await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
     localStorage.removeItem('sales_reports_user');
+    window.location.href = '/login';
   };
 
   return (

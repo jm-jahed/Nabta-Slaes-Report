@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
 import { NabtaDayBlock } from '@/lib/nabtaStore';
 import { formatAED, formatNumber } from '@/lib/calculations';
 import {
@@ -14,19 +13,17 @@ import {
   Calendar,
   CheckCircle2,
   RefreshCw,
-  Package,
-  TrendingUp,
+  LogOut,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import { useAuth } from '@/context/AuthContext';
 
 const DAYS_PER_PAGE = 10;
 
-export default function NabtaReportPage() {
-  const params = useParams();
-  const token = (params?.token as string) || '';
-
+export default function NabtaReport() {
+  const { logout, user } = useAuth();
   const [dayBlocks, setDayBlocks] = useState<NabtaDayBlock[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +35,7 @@ export default function NabtaReportPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const res = await fetch(`/api/nabta/report/${token}`, { cache: 'no-store' });
+      const res = await fetch(`/api/nabta/report`, { cache: 'no-store' });
       const data = await res.json();
 
       if (res.ok && data.valid) {
@@ -46,7 +43,7 @@ export default function NabtaReportPage() {
         setDayBlocks(data.dayBlocks || []);
       } else {
         setIsValid(false);
-        setErrorMessage(data.error || 'The report link is invalid or has been revoked.');
+        setErrorMessage(data.error || 'Failed to load report data.');
       }
     } catch (err: any) {
       setIsValid(false);
@@ -57,10 +54,8 @@ export default function NabtaReportPage() {
   };
 
   useEffect(() => {
-    if (token) {
-      loadReportData();
-    }
-  }, [token]);
+    loadReportData();
+  }, []);
 
   // Pagination calculations
   const totalDays = dayBlocks.length;
@@ -171,10 +166,10 @@ export default function NabtaReportPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white px-4">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white px-4">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs sm:text-sm font-bold">Verifying token & loading report...</p>
+          <p className="text-xs sm:text-sm font-bold">Loading report data...</p>
         </div>
       </div>
     );
@@ -187,10 +182,11 @@ export default function NabtaReportPage() {
           <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6" />
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-rose-400">Report Link Invalid or Revoked</h2>
+          <h2 className="text-lg sm:text-xl font-black text-rose-400">Error Loading Report</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            {errorMessage || 'This Nabta Report link is invalid, expired, or has been revoked by administration. Please request a new shareable link.'}
+            {errorMessage}
           </p>
+          <button onClick={logout} className="px-4 py-2 mt-4 rounded-xl bg-slate-800 text-slate-300 text-sm font-bold">Logout</button>
         </div>
       </div>
     );
@@ -202,9 +198,9 @@ export default function NabtaReportPage() {
       <div className="bg-slate-900/90 border-b border-slate-800 py-2.5 px-3 sm:px-6 print:hidden flex flex-wrap items-center justify-between gap-2 text-xs w-full">
         <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] sm:text-xs">
           <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-          <span className="truncate">Official Read-Only Financial Ledger</span>
+          <span className="truncate">Official Read-Only Financial Ledger (Logged in as {user?.name})</span>
         </div>
-        <div className="flex items-center gap-2 text-slate-400 font-mono text-[10px] sm:text-[11px]">
+        <div className="flex items-center gap-3 text-slate-400 font-mono text-[10px] sm:text-[11px]">
           <button
             onClick={loadReportData}
             title="Refresh live data"
@@ -214,7 +210,13 @@ export default function NabtaReportPage() {
             <span>Sync</span>
           </button>
           <span>•</span>
-          <span>10 Days/Page</span>
+          <button
+            onClick={logout}
+            className="flex items-center gap-1 text-rose-400 hover:text-rose-300 transition-colors"
+          >
+            <LogOut className="w-3 h-3" />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
 

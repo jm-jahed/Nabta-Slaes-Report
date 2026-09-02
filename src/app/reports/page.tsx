@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import ReportFilters from '@/components/reports/ReportFilters';
 import ExportButtons from '@/components/reports/ExportButtons';
-import NabtaLinkManager from '@/components/reports/NabtaLinkManager';
 import { useData } from '@/context/DataContext';
 import { formatAED, formatNumber } from '@/lib/calculations';
 import { FileBarChart2, TrendingUp, Calendar, CheckCircle2 } from 'lucide-react';
@@ -90,10 +89,7 @@ export default function ReportsPage() {
 
   return (
     <MainLayout>
-      {/* 1. Shareable Nabta Report Manager */}
-      <NabtaLinkManager />
-
-      {/* 2. Top Admin Reports Banner */}
+      {/* Top Admin Reports Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-lg">
         <div>
           <div className="flex items-center gap-2">

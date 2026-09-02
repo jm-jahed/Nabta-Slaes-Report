@@ -8,7 +8,9 @@ import OrderTable from '@/components/orders/OrderTable';
 import DaySummaryCard from '@/components/orders/DaySummaryCard';
 import OrderModal from '@/components/orders/OrderModal';
 import PaymentModal from '@/components/orders/PaymentModal';
+import NabtaReport from '@/components/dashboard/NabtaReport';
 import { useData } from '@/context/DataContext';
+import { useAuth } from '@/context/AuthContext';
 import { Order } from '@/types';
 import Link from 'next/link';
 import {
@@ -23,6 +25,7 @@ import {
 import { format, subDays, addDays } from 'date-fns';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { orders, selectedDate, setSelectedDate } = useData();
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -53,6 +56,10 @@ export default function DashboardPage() {
   const handleToday = () => {
     setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
   };
+
+  if (user?.role === 'nabta') {
+    return <NabtaReport />;
+  }
 
   return (
     <MainLayout>

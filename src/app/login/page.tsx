@@ -9,8 +9,8 @@ export default function LoginPage() {
   const { login, user } = useAuth();
   const router = useRouter();
 
-  const [email, setEmail] = useState('admin@salesreport.ae');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,15 +27,6 @@ export default function LoginPage() {
     } else {
       setErrorMsg(result.error || 'Invalid credentials.');
     }
-  };
-
-  const handleQuickDemoAdmin = async () => {
-    setEmail('admin@jahed.ae');
-    setPassword('admin123');
-    setIsLoading(true);
-    await login('admin@jahed.ae', 'admin123');
-    setIsLoading(false);
-    router.push('/');
   };
 
   return (
@@ -62,7 +53,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Admin Username / Email
+              Username
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -71,7 +62,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="jahed2uae"
+                placeholder="Username"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm font-semibold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -100,21 +91,9 @@ export default function LoginPage() {
             className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>{isLoading ? 'Authenticating...' : 'Sign In as Admin'}</span>
+            <span>{isLoading ? 'Authenticating...' : 'Sign In'}</span>
           </button>
         </form>
-
-        {/* Quick Demo Login Button */}
-        <div className="mt-6 pt-6 border-t border-slate-800 text-center space-y-3">
-          <p className="text-[11px] text-slate-400">Quick Testing / Instant Login</p>
-          <button
-            onClick={handleQuickDemoAdmin}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-emerald-400 border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>1-Click Admin Access (Demo Mode)</span>
-          </button>
-        </div>
       </div>
     </div>
   );
