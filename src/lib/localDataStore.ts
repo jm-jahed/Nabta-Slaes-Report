@@ -37,9 +37,75 @@ const writeData = <T>(filename: string, data: T) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 };
 
+const INITIAL_ORDERS = [
+  {
+    id: "ord-20260901-1",
+    date: "2026-09-01",
+    client_name: "Abu Al Joud",
+    qty: 25,
+    cost_price: 4,
+    client_price: 4.5,
+    nabta_bill: 100,
+    client_bill: 112.5,
+    jahed_balance: 12.5,
+    notes: "",
+    created_at: "2026-09-01T08:00:00.000Z"
+  },
+  {
+    id: "ord-20260901-2",
+    date: "2026-09-01",
+    client_name: "Al Mallah",
+    qty: 25,
+    cost_price: 4,
+    client_price: 4.5,
+    nabta_bill: 100,
+    client_bill: 112.5,
+    jahed_balance: 12.5,
+    notes: "",
+    created_at: "2026-09-01T08:10:00.000Z"
+  },
+  {
+    id: "ord-20260901-3",
+    date: "2026-09-01",
+    client_name: "Khalifa Sharjah",
+    qty: 70,
+    cost_price: 3,
+    client_price: 3.5,
+    nabta_bill: 210,
+    client_bill: 245,
+    jahed_balance: 35,
+    notes: "",
+    created_at: "2026-09-01T08:20:00.000Z"
+  },
+  {
+    id: "ord-20260901-4",
+    date: "2026-09-01",
+    client_name: "Xender Peeled",
+    qty: 120,
+    cost_price: 3.6,
+    client_price: 4,
+    nabta_bill: 432,
+    client_bill: 480,
+    jahed_balance: 48,
+    notes: "",
+    created_at: "2026-09-01T08:30:00.000Z"
+  }
+];
+
+const INITIAL_SUMMARIES = [
+  {
+    date: "2026-09-01",
+    nabta_yesterday_balance: -56.2,
+    jahed_balance: 108,
+    paid: 0,
+    nabta_today_balance: -164.2,
+    updated_at: "2026-09-01T09:00:00.000Z"
+  }
+];
+
 export const LocalFS = {
   // --- Orders ---
-  getOrders: () => readData<any[]>('orders.json', []),
+  getOrders: () => readData<any[]>('orders.json', INITIAL_ORDERS),
   saveOrders: (orders: any[]) => writeData('orders.json', orders),
   
   // --- Payments ---
@@ -47,6 +113,6 @@ export const LocalFS = {
   savePayments: (payments: any[]) => writeData('payments.json', payments),
 
   // --- Day Summaries ---
-  getDaySummaries: () => readData<any[]>('summaries.json', []),
+  getDaySummaries: () => readData<any[]>('summaries.json', INITIAL_SUMMARIES),
   saveDaySummaries: (summaries: any[]) => writeData('summaries.json', summaries),
 };
