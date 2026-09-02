@@ -3,6 +3,9 @@ import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
 import { LocalFS } from '@/lib/localDataStore';
 import { format, parseISO } from 'date-fns';
 
+// Force dynamic rendering — this route reads live data and must NOT be statically cached
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     let orders: any[] = [];

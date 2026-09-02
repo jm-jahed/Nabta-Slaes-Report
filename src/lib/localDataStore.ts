@@ -1,8 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 
-// Using a `.data` directory in the project root
-const DATA_DIR = path.join(process.cwd(), '.data');
+// On Vercel serverless, process.cwd() is read-only.
+// Use /tmp (writable) on Vercel, .data locally.
+// NOTE: /tmp is per-Lambda-instance and NOT persistent across cold starts.
+// Configure NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel
+// for true production persistence.
+const IS_VERCEL = Boolean(process.env.VERCEL);
+const DATA_DIR = IS_VERCEL
+  ? '/tmp/jahed-data'
+  : path.join(process.cwd(), '.data');
 
 const getFilePath = (filename: string) => path.join(DATA_DIR, filename);
 
