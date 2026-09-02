@@ -1,47 +1,43 @@
 import { NextResponse } from 'next/server';
-import { getServerPayments, saveServerPayments } from '@/lib/serverDataStore';
-import { Payment } from '@/types';
+import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
 
 export async function GET() {
-  const payments = getServerPayments();
-  return NextResponse.json(payments);
+  if (!isSupabaseConfigured()) return NextResponse.json([]);
+  const { data } = await supabase.from('payments').select('*').order('date', { ascending: false });
+  return NextResponse.json(data || []);
 }
 
 export async function POST(req: Request) {
   try {
+    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const body = await req.json();
-    const { date, amount, reason, payment_method, recipient } = body;
+    const id = 'pay-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+    const { data, error } = await supabase.from('payments').insert({
+      id,
+      date: body.date,
+      amount: Number(body.amount) || 0,
+      reason: body.reason || 'Paid',
+      payment_method: body.payment_method || 'Cash',
+      recipient: body.recipient || '',
+    }).select().single();
 
-    const newPayment: Payment = {
-      id: 'pay-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      date,
-      amount: Number(amount) || 0,
-      reason,
-      payment_method: payment_method || 'Cash',
-      recipient: recipient || '',
-      created_at: new Date().toISOString(),
-    };
-
-    const current = getServerPayments();
-    const updated = [newPayment, ...current];
-    saveServerPayments(updated);
-
-    return NextResponse.json(newPayment);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Error creating payment' }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-
-    const current = getServerPayments();
-    saveServerPayments(current.filter((p) => p.id !== id));
+    const { error } = await supabase.from('payments').delete().eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Error deleting payment' }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

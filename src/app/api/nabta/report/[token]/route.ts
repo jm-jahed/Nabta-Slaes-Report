@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isServerTokenValid } from '@/lib/serverTokenRegistry';
-import { getServerOrders, getServerPayments, getServerSummaries } from '@/lib/serverDataStore';
+import { isServerTokenValid, supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
 import { format, parseISO } from 'date-fns';
 
 export async function GET(
@@ -9,110 +8,82 @@ export async function GET(
 ) {
   const token = params.token;
 
-  // 1. Verify token validity
-  if (!isServerTokenValid(token)) {
+  // 1. Verify token
+  const valid = await isServerTokenValid(token);
+  if (!valid) {
     return NextResponse.json(
-      {
-        valid: false,
-        error: 'The report link is invalid, expired, or has been revoked by administration.',
-      },
+      { valid: false, error: 'The report link is invalid, expired, or has been revoked by administration.' },
       { status: 403 }
     );
   }
 
-  // 2. Fetch live data from server store
-  const orders = getServerOrders();
-  const payments = getServerPayments();
-  const summaries = getServerSummaries();
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ valid: false, error: 'Database not configured.' }, { status: 503 });
+  }
 
-  // 3. Collect unique dates and sort chronologically from oldest to newest
+  // 2. Fetch all data from Supabase
+  const [ordersRes, paymentsRes, summariesRes] = await Promise.all([
+    supabase.from('orders').select('id,date,client_name,qty,cost_price,nabta_bill,client_bill,jahed_balance,notes').order('date', { ascending: true }),
+    supabase.from('payments').select('id,date,amount,reason,payment_method,recipient').order('date', { ascending: true }),
+    supabase.from('day_summaries').select('*').order('date', { ascending: true }),
+  ]);
+
+  const orders = ordersRes.data || [];
+  const payments = paymentsRes.data || [];
+  const summariesArr = summariesRes.data || [];
+  const summaries: Record<string, any> = {};
+  summariesArr.forEach((s) => { summaries[s.date] = s; });
+
+  // 3. Collect unique dates
   const datesSet = new Set<string>();
   orders.forEach((o) => o.date && datesSet.add(o.date));
   payments.forEach((p) => p.date && datesSet.add(p.date));
   Object.keys(summaries).forEach((d) => datesSet.add(d));
 
-  if (datesSet.size === 0) {
-    datesSet.add(format(new Date(), 'yyyy-MM-dd'));
-  }
-
   const sortedDates = Array.from(datesSet).sort((a, b) => a.localeCompare(b));
 
-  // 4. Build sanitized chronological day blocks
-  let runningYesterdayBalance = 5000.0;
-  const dayBlocks = [];
-
-  for (let i = 0; i < sortedDates.length; i++) {
-    const dateStr = sortedDates[i];
+  // 4. Build sanitized day blocks — NO client_price ever!
+  let runningBalance = 5000;
+  const dayBlocks = sortedDates.map((dateStr) => {
     const dayOrders = orders.filter((o) => o.date === dateStr);
     const dayPayments = payments.filter((p) => p.date === dateStr);
 
-    // STRICT SANITIZATION: ABSOLUTELY NO client_price in response object!
     const sanitizedOrders = dayOrders.map((o) => ({
       id: o.id,
       date: o.date,
       client_name: o.client_name,
       qty: Number(o.qty || 0),
-      cost_price: Number(o.cost_price || 0), // Labeled as "Price" in UI table
-      nabta_bill: Number(o.nabta_bill || (o.qty * o.cost_price).toFixed(2)),
+      cost_price: Number(o.cost_price || 0),
+      nabta_bill: Number(o.nabta_bill || 0),
       client_bill: Number(o.client_bill || 0),
       jahed_balance: Number(o.jahed_balance || 0),
       notes: o.notes || '',
     }));
 
-    const jahed_balance = Number(
-      sanitizedOrders.reduce((sum, o) => sum + o.jahed_balance, 0).toFixed(2)
-    );
-
-    const paid = Number(
-      dayPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(2)
-    );
-
-    const paidReasons = dayPayments
-      .map((p) => p.reason || '')
-      .filter(Boolean)
-      .join('; ') || '';
+    const jahed_balance = Number(sanitizedOrders.reduce((s, o) => s + o.jahed_balance, 0).toFixed(2));
+    const paid = Number(dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2));
+    const paidReasons = dayPayments.map((p) => p.reason || '').filter(Boolean).join('; ') || '';
 
     const nabta_yesterday_balance = summaries[dateStr]?.nabta_yesterday_balance !== undefined
       ? Number(summaries[dateStr].nabta_yesterday_balance)
-      : runningYesterdayBalance;
+      : runningBalance;
 
-    const nabta_today_balance = Number(
-      (nabta_yesterday_balance - jahed_balance - paid).toFixed(2)
-    );
-
-    runningYesterdayBalance = nabta_today_balance;
+    const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance - paid).toFixed(2));
+    runningBalance = nabta_today_balance;
 
     let formattedDate = dateStr;
-    try {
-      formattedDate = format(parseISO(dateStr), 'dd MMMM yyyy');
-    } catch (e) {}
+    try { formattedDate = format(parseISO(dateStr), 'dd MMMM yyyy'); } catch {}
 
-    dayBlocks.push({
+    return {
       date: dateStr,
       formattedDate,
       orders: sanitizedOrders,
-      summary: {
-        nabta_yesterday_balance,
-        jahed_balance,
-        paid,
-        paid_reason: paidReasons,
-        nabta_today_balance,
-      },
-    });
-  }
+      summary: { nabta_yesterday_balance, jahed_balance, paid, paid_reason: paidReasons, nabta_today_balance },
+    };
+  });
 
   return NextResponse.json(
-    {
-      valid: true,
-      token,
-      generatedAt: new Date().toISOString(),
-      totalDays: dayBlocks.length,
-      dayBlocks,
-    },
-    {
-      headers: {
-        'Cache-Control': 'no-store, max-age=0',
-      },
-    }
+    { valid: true, token, generatedAt: new Date().toISOString(), totalDays: dayBlocks.length, dayBlocks },
+    { headers: { 'Cache-Control': 'no-store' } }
   );
 }

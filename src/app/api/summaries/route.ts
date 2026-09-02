@@ -1,91 +1,81 @@
 import { NextResponse } from 'next/server';
-import { getServerSummaries, saveServerSummaries, getServerOrders, getServerPayments } from '@/lib/serverDataStore';
-import { calculateDaySummary } from '@/lib/calculations';
-import { format, subDays } from 'date-fns';
+import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
 
 export async function GET(req: Request) {
+  if (!isSupabaseConfigured()) return NextResponse.json({});
   const { searchParams } = new URL(req.url);
   const dateStr = searchParams.get('date');
 
-  const summaries = getServerSummaries();
-
   if (dateStr) {
-    const orders = getServerOrders();
-    const payments = getServerPayments();
+    // Fetch or recalculate summary for a specific date
+    const [ordersRes, paymentsRes, summaryRes] = await Promise.all([
+      supabase.from('orders').select('jahed_balance').eq('date', dateStr),
+      supabase.from('payments').select('amount').eq('date', dateStr),
+      supabase.from('day_summaries').select('*').eq('date', dateStr).maybeSingle(),
+    ]);
 
-    const dayOrders = orders.filter((o) => o.date === dateStr);
     const jahed_balance = Number(
-      dayOrders.reduce((sum, o) => sum + (Number(o.jahed_balance) || 0), 0).toFixed(2)
+      (ordersRes.data || []).reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2)
     );
-
-    const dayPayments = payments.filter((p) => p.date === dateStr);
     const paid = Number(
-      dayPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0).toFixed(2)
+      (paymentsRes.data || []).reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2)
     );
 
-    let nabta_yesterday_balance = 0;
-    const yesterdayStr = format(subDays(new Date(dateStr), 1), 'yyyy-MM-dd');
-    if (summaries[yesterdayStr]) {
-      nabta_yesterday_balance = summaries[yesterdayStr].nabta_today_balance;
-    } else {
-      const sortedPastDates = Object.keys(summaries)
-        .filter((d) => d < dateStr)
-        .sort((a, b) => b.localeCompare(a));
-      if (sortedPastDates.length > 0) {
-        nabta_yesterday_balance = summaries[sortedPastDates[0]].nabta_today_balance;
-      } else if (summaries[dateStr]?.nabta_yesterday_balance !== undefined) {
-        nabta_yesterday_balance = summaries[dateStr].nabta_yesterday_balance;
-      } else {
-        nabta_yesterday_balance = 5000.0;
-      }
-    }
+    // Get yesterday's today balance as yesterday balance
+    const { data: prevSummary } = await supabase
+      .from('day_summaries')
+      .select('nabta_today_balance')
+      .lt('date', dateStr)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    const nabta_today_balance = calculateDaySummary(nabta_yesterday_balance, jahed_balance, paid);
+    const nabta_yesterday_balance = summaryRes.data?.nabta_yesterday_balance !== undefined
+      ? Number(summaryRes.data.nabta_yesterday_balance)
+      : prevSummary ? Number(prevSummary.nabta_today_balance) : 5000;
+
+    const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance - paid).toFixed(2));
 
     const summary = {
-      date: dateStr,
-      nabta_yesterday_balance,
-      jahed_balance,
-      paid,
-      nabta_today_balance,
+      date: dateStr, nabta_yesterday_balance, jahed_balance, paid, nabta_today_balance,
       updated_at: new Date().toISOString(),
     };
 
-    summaries[dateStr] = summary;
-    saveServerSummaries(summaries);
+    // Upsert summary
+    await supabase.from('day_summaries').upsert(summary, { onConflict: 'date' });
 
     return NextResponse.json(summary);
   }
 
-  return NextResponse.json(summaries);
+  const { data } = await supabase.from('day_summaries').select('*');
+  const map: Record<string, any> = {};
+  (data || []).forEach((s) => { map[s.date] = s; });
+  return NextResponse.json(map);
 }
 
 export async function POST(req: Request) {
   try {
+    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const body = await req.json();
     const { date, nabta_yesterday_balance } = body;
 
-    const summaries = getServerSummaries();
-    const current = summaries[date] || {
-      date,
-      nabta_yesterday_balance: Number(nabta_yesterday_balance),
-      jahed_balance: 0,
-      paid: 0,
-      nabta_today_balance: Number(nabta_yesterday_balance),
-    };
-
-    current.nabta_yesterday_balance = Number(nabta_yesterday_balance);
-    current.nabta_today_balance = calculateDaySummary(
-      current.nabta_yesterday_balance,
-      current.jahed_balance,
-      current.paid
+    // Recalculate with new opening balance
+    const [ordersRes, paymentsRes] = await Promise.all([
+      supabase.from('orders').select('jahed_balance').eq('date', date),
+      supabase.from('payments').select('amount').eq('date', date),
+    ]);
+    const jahed_balance = Number(
+      (ordersRes.data || []).reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2)
     );
+    const paid = Number(
+      (paymentsRes.data || []).reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2)
+    );
+    const nabta_today_balance = Number((Number(nabta_yesterday_balance) - jahed_balance - paid).toFixed(2));
 
-    summaries[date] = current;
-    saveServerSummaries(summaries);
-
-    return NextResponse.json(current);
+    const summary = { date, nabta_yesterday_balance: Number(nabta_yesterday_balance), jahed_balance, paid, nabta_today_balance };
+    await supabase.from('day_summaries').upsert(summary, { onConflict: 'date' });
+    return NextResponse.json(summary);
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Error updating summary' }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
