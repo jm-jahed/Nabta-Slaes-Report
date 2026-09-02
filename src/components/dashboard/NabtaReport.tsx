@@ -149,7 +149,7 @@ export default function NabtaReport() {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42);
         doc.text(
-          `Summary: Yesterday: AED ${day.summary.nabta_yesterday_balance.toFixed(2)}  |  Jahed Profit: +AED ${day.summary.jahed_balance.toFixed(2)}  |  Paid: AED ${day.summary.paid.toFixed(2)} (${day.summary.paid_reason})  |  Today Balance: AED ${day.summary.nabta_today_balance.toFixed(2)}`,
+          `Summary: Nabta Yesterday: AED ${day.summary.nabta_yesterday_balance.toFixed(2)}  |  Jahed Profit: +AED ${day.summary.jahed_balance.toFixed(2)}  |  Paid: AED ${day.summary.paid.toFixed(2)} (${day.summary.paid_reason})  |  Today Balance: AED ${day.summary.nabta_today_balance.toFixed(2)}`,
           14,
           currentY
         );
@@ -507,7 +507,7 @@ export default function NabtaReport() {
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs w-full">
                     {/* Nabta Yesterday Balance */}
                     <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between">
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">Yesterday</p>
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">Nabta Yesterday</p>
                       <p className="text-xs sm:text-sm font-black font-mono text-white print:text-black mt-0.5 truncate">
                         {formatAED(day.summary.nabta_yesterday_balance)}
                       </p>
