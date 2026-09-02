@@ -1,0 +1,594 @@
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { NabtaDayBlock } from '@/lib/nabtaStore';
+import { formatAED, formatNumber } from '@/lib/calculations';
+import {
+  Printer,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  ShieldAlert,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  RefreshCw,
+  Package,
+  TrendingUp,
+} from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { format } from 'date-fns';
+
+const DAYS_PER_PAGE = 10;
+
+export default function NabtaReportPage() {
+  const params = useParams();
+  const token = (params?.token as string) || '';
+
+  const [dayBlocks, setDayBlocks] = useState<NabtaDayBlock[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isValid, setIsValid] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Load live data from server endpoint
+  const loadReportData = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      const res = await fetch(`/api/nabta/report/${token}`, { cache: 'no-store' });
+      const data = await res.json();
+
+      if (res.ok && data.valid) {
+        setIsValid(true);
+        setDayBlocks(data.dayBlocks || []);
+      } else {
+        setIsValid(false);
+        setErrorMessage(data.error || 'The report link is invalid or has been revoked.');
+      }
+    } catch (err: any) {
+      setIsValid(false);
+      setErrorMessage('Network error connecting to report server.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      loadReportData();
+    }
+  }, [token]);
+
+  // Pagination calculations
+  const totalDays = dayBlocks.length;
+  const totalPages = Math.max(1, Math.ceil(totalDays / DAYS_PER_PAGE));
+
+  const pageStartIndex = (currentPage - 1) * DAYS_PER_PAGE;
+  const pageEndIndex = Math.min(pageStartIndex + DAYS_PER_PAGE, totalDays);
+  const currentDaysSlice = dayBlocks.slice(pageStartIndex, pageEndIndex);
+
+  // Determine Report Period for the current 10-day slice
+  const reportPeriodLabel = useMemo(() => {
+    if (currentDaysSlice.length === 0) return 'No Data Available';
+    const firstDay = currentDaysSlice[0]?.formattedDate || currentDaysSlice[0]?.date;
+    const lastDay = currentDaysSlice[currentDaysSlice.length - 1]?.formattedDate || currentDaysSlice[currentDaysSlice.length - 1]?.date;
+    return `${firstDay} — ${lastDay}`;
+  }, [currentDaysSlice]);
+
+  // Print Report Handler
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // PDF Export Handler
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      // Header Banner
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, 210, 26, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text('NABTA SALES REPORT', 14, 14);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(52, 211, 153); // emerald-400
+      doc.text(`Report Period: ${reportPeriodLabel} (Page ${currentPage} of ${totalPages})`, 14, 21);
+
+      let currentY = 32;
+
+      // Render each day block
+      currentDaysSlice.forEach((day, dayIdx) => {
+        // Check page overflow
+        if (currentY > 235) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        // Day Title
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, currentY - 4, 182, 7, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.text(`Day ${pageStartIndex + dayIdx + 1}: ${day.formattedDate} (${day.orders.length} Orders)`, 16, currentY);
+        currentY += 5;
+
+        // Table
+        const head = [['#', 'Client Name', 'Qty', 'Price (AED)', 'Nabta Bill', 'Client Bill', 'Jahed Balance']];
+        const rows = day.orders.map((o, idx) => [
+          idx + 1,
+          o.client_name,
+          formatNumber(o.qty),
+          o.cost_price.toFixed(2),
+          o.nabta_bill.toFixed(2),
+          o.client_bill.toFixed(2),
+          `+${o.jahed_balance.toFixed(2)}`,
+        ]);
+
+        if (day.orders.length === 0) {
+          rows.push(['-', 'No orders recorded for this day', '-', '-', '0.00', '0.00', '0.00']);
+        }
+
+        autoTable(doc, {
+          head,
+          body: rows,
+          startY: currentY,
+          theme: 'grid',
+          margin: { left: 14, right: 14 },
+          headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+          styles: { fontSize: 7.5, cellPadding: 1.8 },
+        });
+
+        currentY = (doc as any).lastAutoTable.finalY + 3;
+
+        // Day Summary Box
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42);
+        doc.text(
+          `Summary: Yesterday: AED ${day.summary.nabta_yesterday_balance.toFixed(2)}  |  Jahed Profit: +AED ${day.summary.jahed_balance.toFixed(2)}  |  Paid: AED ${day.summary.paid.toFixed(2)} (${day.summary.paid_reason})  |  Today Balance: AED ${day.summary.nabta_today_balance.toFixed(2)}`,
+          14,
+          currentY
+        );
+
+        currentY += 8;
+      });
+
+      const fileName = `Nabta_Sales_Report_Page_${currentPage}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      doc.save(fileName);
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs sm:text-sm font-bold">Verifying token & loading report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isValid) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-black text-rose-400">Report Link Invalid or Revoked</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            {errorMessage || 'This Nabta Report link is invalid, expired, or has been revoked by administration. Please request a new shareable link.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500 selection:text-white print:bg-white print:text-black overflow-x-hidden w-full max-w-full">
+      {/* Top Read-Only Bar */}
+      <div className="bg-slate-900/90 border-b border-slate-800 py-2.5 px-3 sm:px-6 print:hidden flex flex-wrap items-center justify-between gap-2 text-xs w-full">
+        <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] sm:text-xs">
+          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="truncate">Official Read-Only Financial Ledger</span>
+        </div>
+        <div className="flex items-center gap-2 text-slate-400 font-mono text-[10px] sm:text-[11px]">
+          <button
+            onClick={loadReportData}
+            title="Refresh live data"
+            className="flex items-center gap-1 hover:text-white transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>Sync</span>
+          </button>
+          <span>•</span>
+          <span>10 Days/Page</span>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <div className="max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 print:p-0 print:max-w-full w-full box-border">
+        {/* 1. REPORT HEADER */}
+        <header className="p-4 sm:p-7 rounded-3xl bg-slate-900/95 border border-slate-800 shadow-2xl space-y-4 print:border-none print:shadow-none print:p-0 w-full box-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 print:border-black pb-4 sm:pb-5">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/20 print:hidden flex-shrink-0">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white print:text-black leading-tight">
+                    NABTA SALES REPORT
+                  </h1>
+                </div>
+              </div>
+              <div className="flex items-start sm:items-center gap-1.5 text-xs sm:text-sm text-emerald-400 print:text-black font-semibold">
+                <Calendar className="w-3.5 h-3.5 mt-0.5 sm:mt-0 print:hidden flex-shrink-0" />
+                <span className="leading-snug">Report Period: <b>{reportPeriodLabel}</b></span>
+              </div>
+            </div>
+
+            {/* Print & PDF Buttons */}
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 print:hidden w-full sm:w-auto">
+              <button
+                onClick={handlePrint}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-colors shadow-sm"
+              >
+                <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Print</span>
+              </button>
+
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 transition-all"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Download PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Page Info & Pagination Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 print:hidden">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span>Showing:</span>
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-white font-bold font-mono text-[11px]">
+                Days {pageStartIndex + 1}–{pageEndIndex} of {totalDays}
+              </span>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  setCurrentPage((p) => Math.max(1, p - 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === 1}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Previous</span>
+              </button>
+
+              <span className="px-2.5 py-1 text-xs font-bold text-emerald-400 font-mono text-center">
+                {currentPage} / {totalPages}
+              </span>
+
+              <button
+                onClick={() => {
+                  setCurrentPage((p) => Math.min(totalPages, p + 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === totalPages}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* 2. CHRONOLOGICAL 10 DAYS PER PAGE LIST */}
+        <div className="space-y-6 sm:space-y-8 w-full">
+          {currentDaysSlice.map((day, dayIndex) => {
+            const dayNumber = pageStartIndex + dayIndex + 1;
+            const totalQty = day.orders.reduce((sum, o) => sum + Number(o.qty || 0), 0);
+            const totalNabtaBill = day.orders.reduce((sum, o) => sum + Number(o.nabta_bill || 0), 0);
+            const totalClientBill = day.orders.reduce((sum, o) => sum + Number(o.client_bill || 0), 0);
+            const totalJahedBalance = day.orders.reduce((sum, o) => sum + Number(o.jahed_balance || 0), 0);
+
+            return (
+              <section
+                key={day.date}
+                className="rounded-3xl bg-slate-900/90 border border-slate-800 overflow-hidden shadow-xl print:border-black print:bg-transparent print:shadow-none print:break-inside-avoid w-full box-border"
+              >
+                {/* Day Header */}
+                <div className="p-3.5 sm:p-5 border-b border-slate-800 bg-slate-850/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 print:border-black print:bg-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold font-mono print:text-black flex-shrink-0">
+                      #{dayNumber}
+                    </span>
+                    <div>
+                      <h2 className="text-sm sm:text-base font-bold text-white print:text-black">
+                        {day.formattedDate}
+                      </h2>
+                      <p className="text-[10px] sm:text-[11px] text-slate-400 print:text-slate-600 font-mono">
+                        Total = {day.orders.length} {day.orders.length === 1 ? 'Order' : 'Orders'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="self-start sm:self-auto text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-400 font-mono print:text-black border border-emerald-500/20">
+                    Jahed: +{formatAED(day.summary.jahed_balance)}
+                  </span>
+                </div>
+
+                {/* --- A. DESKTOP VIEW: STANDARD TABLE (Hidden on Mobile) --- */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 print:bg-slate-200 print:text-black print:border-black">
+                        <th className="py-3 px-4">Date</th>
+                        <th className="py-3 px-4">Client Name</th>
+                        <th className="py-3 px-4 text-right">Qty</th>
+                        <th className="py-3 px-4 text-right">Price</th>
+                        <th className="py-3 px-4 text-right">Nabta Bill</th>
+                        <th className="py-3 px-4 text-right">Client Bill</th>
+                        <th className="py-3 px-4 text-right">Jahed Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-xs sm:text-sm print:divide-slate-300">
+                      {day.orders.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-6 text-center text-xs text-slate-500 print:text-black">
+                            No orders recorded on this date.
+                          </td>
+                        </tr>
+                      ) : (
+                        day.orders.map((o) => (
+                          <tr key={o.id} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400 print:text-black whitespace-nowrap">
+                              {day.date}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-white print:text-black">
+                              {o.client_name}
+                              {o.notes && (
+                                <span className="block text-[10px] text-slate-500 font-normal">
+                                  {o.notes}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-200 print:text-black">
+                              {formatNumber(o.qty)}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono text-slate-400 print:text-black text-xs">
+                              {formatAED(o.cost_price)}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-100 print:text-black">
+                              {formatAED(o.nabta_bill)}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-amber-400 print:text-black">
+                              {formatAED(o.client_bill)}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-extrabold text-emerald-400 print:text-black">
+                              +{formatAED(o.jahed_balance)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+
+                    {/* Day Orders Desktop Subtotal */}
+                    {day.orders.length > 0 && (
+                      <tfoot>
+                        <tr className="border-t border-slate-800 bg-slate-950/80 font-bold text-xs uppercase tracking-wider print:bg-slate-100 print:border-black">
+                          <td colSpan={2} className="py-2.5 px-4 text-slate-300 print:text-black">
+                            Day #{dayNumber} Total
+                          </td>
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-200 print:text-black">
+                            {formatNumber(totalQty)}
+                          </td>
+                          <td className="py-2.5 px-4 text-right text-slate-500">-</td>
+                          <td className="py-2.5 px-4 text-right font-mono text-white print:text-black">
+                            {formatAED(totalNabtaBill)}
+                          </td>
+                          <td className="py-2.5 px-4 text-right font-mono text-amber-400 print:text-black">
+                            {formatAED(totalClientBill)}
+                          </td>
+                          <td className="py-2.5 px-4 text-right font-mono text-emerald-400 print:text-black">
+                            +{formatAED(totalJahedBalance)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+
+                {/* --- B. MOBILE VIEW: COMPACT ORDER CARDS (No Horizontal Scroll) --- */}
+                <div className="md:hidden p-3 space-y-3 print:hidden">
+                  {day.orders.length === 0 ? (
+                    <p className="text-center text-xs text-slate-500 py-3">No orders recorded for this day.</p>
+                  ) : (
+                    day.orders.map((o, ordIdx) => (
+                      <div
+                        key={o.id}
+                        className="p-3 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-2.5 shadow-sm"
+                      >
+                        {/* Card Header: Client Name & Date */}
+                        <div className="flex items-start justify-between gap-2 border-b border-slate-850 pb-2">
+                          <div>
+                            <h3 className="text-xs font-bold text-white leading-snug">
+                              {o.client_name}
+                            </h3>
+                            {o.notes && (
+                              <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                                {o.notes}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-400 flex-shrink-0 bg-slate-900 px-1.5 py-0.5 rounded">
+                            {day.date}
+                          </span>
+                        </div>
+
+                        {/* Card Metrics Grid */}
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
+                            <span className="text-slate-400 font-medium">Qty:</span>
+                            <span className="font-bold font-mono text-slate-200">{formatNumber(o.qty)}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
+                            <span className="text-slate-400 font-medium">Price:</span>
+                            <span className="font-bold font-mono text-slate-300">{formatAED(o.cost_price)}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
+                            <span className="text-slate-400 font-medium">Nabta Bill:</span>
+                            <span className="font-bold font-mono text-slate-100">{formatAED(o.nabta_bill)}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
+                            <span className="text-slate-400 font-medium">Client Bill:</span>
+                            <span className="font-bold font-mono text-amber-400">{formatAED(o.client_bill)}</span>
+                          </div>
+                        </div>
+
+                        {/* Profit Row */}
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-850 text-xs">
+                          <span className="text-slate-400 font-semibold">Jahed Balance:</span>
+                          <span className="font-extrabold font-mono text-emerald-400">
+                            +{formatAED(o.jahed_balance)}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {/* Mobile Day Subtotal Box */}
+                  {day.orders.length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-slate-850 border border-slate-700/60 text-[11px] space-y-1">
+                      <div className="flex items-center justify-between font-bold text-slate-300">
+                        <span>Day #{dayNumber} Subtotal ({day.orders.length} Orders)</span>
+                        <span className="font-mono">{formatNumber(totalQty)} Qty</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-400">
+                        <span>Nabta: <b className="text-white font-mono">{formatAED(totalNabtaBill)}</b></span>
+                        <span>Client: <b className="text-amber-400 font-mono">{formatAED(totalClientBill)}</b></span>
+                        <span>Jahed: <b className="text-emerald-400 font-mono">+{formatAED(totalJahedBalance)}</b></span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. DAY SUMMARY BOX (Below Each Day's Table) */}
+                <div className="p-3.5 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-t border-slate-800 space-y-2.5 print:border-black print:bg-slate-50 w-full box-border">
+                  <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-400 print:text-black">
+                    Day Financial Summary:
+                  </div>
+
+                  {/* Responsive Grid: 2 columns on mobile, 5 columns on desktop */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs w-full">
+                    {/* Nabta Yesterday Balance */}
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between">
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">Yesterday</p>
+                      <p className="text-xs sm:text-sm font-black font-mono text-white print:text-black mt-0.5 truncate">
+                        {formatAED(day.summary.nabta_yesterday_balance)}
+                      </p>
+                    </div>
+
+                    {/* Jahed Balance */}
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between">
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">(−) Jahed</p>
+                      <p className="text-xs sm:text-sm font-black font-mono text-emerald-400 print:text-black mt-0.5 truncate">
+                        {formatAED(day.summary.jahed_balance)}
+                      </p>
+                    </div>
+
+                    {/* Paid — merged with Reason. If paid=0, show just 0.00, no reason text */}
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between col-span-2 sm:col-span-1">
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">(−) Paid</p>
+                      <p className="text-xs sm:text-sm font-black font-mono text-amber-400 print:text-black mt-0.5 truncate">
+                        {formatAED(day.summary.paid)}
+                      </p>
+                      {/* Only show reason badge when there IS a payment */}
+                      {day.summary.paid > 0 && day.summary.paid_reason &&
+                        !['No payments recorded'].includes(day.summary.paid_reason) && (
+                        <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 truncate">
+                          {day.summary.paid_reason}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Nabta Today Balance */}
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 print:border-black print:bg-white col-span-2 sm:col-span-1 flex flex-col justify-between">
+                      <p className="text-[9px] sm:text-[10px] text-emerald-300 print:text-black uppercase font-bold">Nabta Today</p>
+                      <p className="text-xs sm:text-sm font-black font-mono text-emerald-300 print:text-black mt-0.5 truncate">
+                        {formatAED(day.summary.nabta_today_balance)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        {/* Footer Pagination Navigation */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6 rounded-3xl bg-slate-900 border border-slate-800 print:hidden w-full box-border">
+          <p className="text-[11px] sm:text-xs text-slate-400 font-mono text-center sm:text-left">
+            Page {currentPage} of {totalPages} ({totalDays} Days)
+          </p>
+
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentPage === 1}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold text-white border border-slate-700 transition-all"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            <span className="px-3 py-1 text-xs font-bold text-emerald-400 font-mono">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() => {
+                setCurrentPage((p) => Math.min(totalPages, p + 1));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentPage === totalPages}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <footer className="text-center text-[10px] sm:text-[11px] text-slate-500 print:text-black pb-8">
+          <p>This is a certified electronic ledger for Nabta Sales. Automatically calculated & verified.</p>
+        </footer>
+      </div>
+    </div>
+  );
+}
