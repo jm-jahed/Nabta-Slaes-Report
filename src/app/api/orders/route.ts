@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
+import { LocalFS } from '@/lib/localDataStore';
 
 export async function GET() {
-  if (!isSupabaseConfigured()) return NextResponse.json([]);
+  if (!isSupabaseConfigured()) {
+    const orders = LocalFS.getOrders().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return NextResponse.json(orders);
+  }
   const { data } = await supabase.from('orders').select('*').order('date', { ascending: false });
   return NextResponse.json(data || []);
 }
 
 export async function POST(req: Request) {
   try {
-    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const body = await req.json();
     const { date, client_name, qty, cost_price, client_price, notes } = body;
 
@@ -21,12 +24,23 @@ export async function POST(req: Request) {
     const jahed_balance = Number((client_bill - nabta_bill).toFixed(2));
 
     const id = 'ord-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
-    const { data, error } = await supabase.from('orders').insert({
+    
+    const newOrder = {
       id, date, client_name,
       qty: numQty, cost_price: numCost, client_price: numClientPrice,
       nabta_bill, client_bill, jahed_balance,
       notes: notes || '',
-    }).select().single();
+      created_at: new Date().toISOString()
+    };
+
+    if (!isSupabaseConfigured()) {
+      const orders = LocalFS.getOrders();
+      orders.push(newOrder);
+      LocalFS.saveOrders(orders);
+      return NextResponse.json(newOrder);
+    }
+
+    const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
@@ -37,7 +51,6 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const body = await req.json();
     const numQty = Number(body.qty) || 0;
     const numCost = Number(body.cost_price) || 0;
@@ -46,8 +59,21 @@ export async function PUT(req: Request) {
     const client_bill = Number((numQty * numClientPrice).toFixed(2));
     const jahed_balance = Number((client_bill - nabta_bill).toFixed(2));
 
+    const updatedData = { ...body, nabta_bill, client_bill, jahed_balance, updated_at: new Date().toISOString() };
+
+    if (!isSupabaseConfigured()) {
+      const orders = LocalFS.getOrders();
+      const index = orders.findIndex((o: any) => o.id === body.id);
+      if (index !== -1) {
+        orders[index] = { ...orders[index], ...updatedData };
+        LocalFS.saveOrders(orders);
+        return NextResponse.json(orders[index]);
+      }
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     const { data, error } = await supabase.from('orders')
-      .update({ ...body, nabta_bill, client_bill, jahed_balance, updated_at: new Date().toISOString() })
+      .update(updatedData)
       .eq('id', body.id).select().single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -59,10 +85,17 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    if (!isSupabaseConfigured()) {
+      let orders = LocalFS.getOrders();
+      orders = orders.filter((o: any) => o.id !== id);
+      LocalFS.saveOrders(orders);
+      return NextResponse.json({ success: true });
+    }
+
     const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });

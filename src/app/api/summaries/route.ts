@@ -1,10 +1,35 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
+import { LocalFS } from '@/lib/localDataStore';
 
 export async function GET(req: Request) {
-  if (!isSupabaseConfigured()) return NextResponse.json({});
   const { searchParams } = new URL(req.url);
   const dateStr = searchParams.get('date');
+
+  if (!isSupabaseConfigured()) {
+    let summaries = LocalFS.getDaySummaries();
+    if (dateStr) {
+      let summary = summaries.find((s: any) => s.date === dateStr);
+      if (!summary) {
+        const orders = LocalFS.getOrders().filter((o: any) => o.date === dateStr);
+        const payments = LocalFS.getPayments().filter((p: any) => p.date === dateStr);
+        const jahed_balance = orders.reduce((s: number, o: any) => s + (o.jahed_balance || 0), 0);
+        const paid = payments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+        
+        let prevSummary = summaries.filter((s: any) => s.date < dateStr).sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
+        const nabta_yesterday_balance = prevSummary ? prevSummary.nabta_today_balance : 5000;
+        const nabta_today_balance = nabta_yesterday_balance - jahed_balance - paid;
+        
+        summary = { date: dateStr, nabta_yesterday_balance, jahed_balance, paid, nabta_today_balance, updated_at: new Date().toISOString() };
+        summaries.push(summary);
+        LocalFS.saveDaySummaries(summaries);
+      }
+      return NextResponse.json(summary);
+    }
+    const map: Record<string, any> = {};
+    summaries.forEach((s: any) => { map[s.date] = s; });
+    return NextResponse.json(map);
+  }
 
   if (dateStr) {
     // Fetch or recalculate summary for a specific date
@@ -55,9 +80,27 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    if (!isSupabaseConfigured()) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
     const body = await req.json();
     const { date, nabta_yesterday_balance } = body;
+
+    if (!isSupabaseConfigured()) {
+      const orders = LocalFS.getOrders().filter((o: any) => o.date === date);
+      const payments = LocalFS.getPayments().filter((p: any) => p.date === date);
+      const jahed_balance = orders.reduce((s: number, o: any) => s + (o.jahed_balance || 0), 0);
+      const paid = payments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+      const nabta_today_balance = Number(nabta_yesterday_balance) - jahed_balance - paid;
+      
+      const summary = { date, nabta_yesterday_balance: Number(nabta_yesterday_balance), jahed_balance, paid, nabta_today_balance, updated_at: new Date().toISOString() };
+      let summaries = LocalFS.getDaySummaries();
+      const index = summaries.findIndex((s: any) => s.date === date);
+      if (index !== -1) {
+        summaries[index] = summary;
+      } else {
+        summaries.push(summary);
+      }
+      LocalFS.saveDaySummaries(summaries);
+      return NextResponse.json(summary);
+    }
 
     // Recalculate with new opening balance
     const [ordersRes, paymentsRes] = await Promise.all([

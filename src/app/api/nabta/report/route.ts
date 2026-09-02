@@ -1,23 +1,28 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
+import { LocalFS } from '@/lib/localDataStore';
 import { format, parseISO } from 'date-fns';
 
 export async function GET() {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ valid: false, error: 'Database not configured.' }, { status: 503 });
-  }
-
   try {
-    // 1. Fetch all data from Supabase
-    const [ordersRes, paymentsRes, summariesRes] = await Promise.all([
-      supabase.from('orders').select('id,date,client_name,qty,cost_price,nabta_bill,client_bill,jahed_balance,notes').order('date', { ascending: true }),
-      supabase.from('payments').select('id,date,amount,reason,payment_method,recipient').order('date', { ascending: true }),
-      supabase.from('day_summaries').select('*').order('date', { ascending: true }),
-    ]);
+    let orders: any[] = [];
+    let payments: any[] = [];
+    let summariesArr: any[] = [];
 
-    const orders = ordersRes.data || [];
-    const payments = paymentsRes.data || [];
-    const summariesArr = summariesRes.data || [];
+    if (isSupabaseConfigured()) {
+      const [ordersRes, paymentsRes, summariesRes] = await Promise.all([
+        supabase.from('orders').select('id,date,client_name,qty,cost_price,nabta_bill,client_bill,jahed_balance,notes').order('date', { ascending: true }),
+        supabase.from('payments').select('id,date,amount,reason,payment_method,recipient').order('date', { ascending: true }),
+        supabase.from('day_summaries').select('*').order('date', { ascending: true }),
+      ]);
+      orders = ordersRes.data || [];
+      payments = paymentsRes.data || [];
+      summariesArr = summariesRes.data || [];
+    } else {
+      orders = LocalFS.getOrders();
+      payments = LocalFS.getPayments();
+      summariesArr = LocalFS.getDaySummaries();
+    }
     const summaries: Record<string, any> = {};
     summariesArr.forEach((s) => { summaries[s.date] = s; });
 
