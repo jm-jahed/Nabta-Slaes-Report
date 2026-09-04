@@ -15,10 +15,11 @@ export function calculateClientBill(qty: number, clientPrice: number): number {
 }
 
 /**
- * Calculates Jahed Balance: Client Bill - Nabta Bill
+ * Calculates Jahed Balance: Client No Pay
+ * (Replaced old profit logic based on new accounting rule)
  */
-export function calculateJahedBalance(clientBill: number, nabtaBill: number): number {
-  return Number((clientBill - nabtaBill).toFixed(2));
+export function calculateJahedBalance(clientBill: number, amountReceived: number): number {
+  return Number(Math.max(0, clientBill - (amountReceived || 0)).toFixed(2));
 }
 
 /**
@@ -28,10 +29,11 @@ export function computeOrderFields(params: {
   qty: number;
   cost_price: number;
   client_price: number;
+  amount_received?: number;
 }): { nabta_bill: number; client_bill: number; jahed_balance: number } {
   const nabta_bill = calculateNabtaBill(params.qty, params.cost_price);
   const client_bill = calculateClientBill(params.qty, params.client_price);
-  const jahed_balance = calculateJahedBalance(client_bill, nabta_bill);
+  const jahed_balance = calculateJahedBalance(client_bill, params.amount_received || 0);
 
   return {
     nabta_bill,
@@ -42,14 +44,14 @@ export function computeOrderFields(params: {
 
 /**
  * Calculates Day Summary:
- * Nabta Today Balance = Nabta Yesterday Balance - Jahed Balance - Paid Amount
+ * Nabta Today Balance = Nabta Yesterday Balance + Total Paid Amount
+ * (Removed Jahed Balance deduction as per new accounting rule)
  */
 export function calculateDaySummary(
   nabtaYesterdayBalance: number,
-  jahedBalance: number,
   paidAmount: number
 ): number {
-  return Number((nabtaYesterdayBalance - jahedBalance - paidAmount).toFixed(2));
+  return Number((nabtaYesterdayBalance + paidAmount).toFixed(2));
 }
 
 /**

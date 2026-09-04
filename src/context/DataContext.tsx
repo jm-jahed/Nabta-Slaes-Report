@@ -49,10 +49,19 @@ function computeLocalSummary(
   const jahed_balance = Number(
     dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2)
   );
+  
+  // Expenses/Vouchers
   const paid = Number(
     dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2)
   );
-  const nabta_today_balance = Number((openingBalance - jahed_balance - paid).toFixed(2));
+  
+  // Total Client Payments
+  const orders_paid = Number(
+    dayOrders.reduce((s, o) => s + Number(o.amount_received || 0), 0).toFixed(2)
+  );
+
+  // Nabta Balance = Yesterday + Total Paid (by clients) - Vouchers
+  const nabta_today_balance = Number((openingBalance + orders_paid - paid).toFixed(2));
 
   return {
     date: dateStr,

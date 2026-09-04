@@ -28,6 +28,7 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
     daySummary,
     selectedDate,
     payments,
+    orders,
     removePayment,
     updateYesterdayOpeningBalance,
   } = useData();
@@ -36,11 +37,14 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
   const [openingBalanceInput, setOpeningBalanceInput] = useState<string>('');
 
   const dayPayments = payments.filter((p) => p.date === selectedDate);
+  const dayOrders = orders.filter((o) => o.date === selectedDate);
 
   const yesterdayBalance = Number(daySummary?.nabta_yesterday_balance || 0);
   const jahedBalance = Number(daySummary?.jahed_balance || 0);
   const paidAmount = Number(daySummary?.paid || 0);
   const todayBalance = Number(daySummary?.nabta_today_balance || 0);
+  
+  const ordersPaid = dayOrders.reduce((sum, o) => sum + Number(o.amount_received || 0), 0);
 
   const isTodayBalancePositive = todayBalance >= 0;
 
@@ -84,13 +88,13 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
         </button>
       </div>
 
-      {/* 4 Primary Summary Metric Tiles in Pipeline Flow */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Primary Summary Metric Tiles in Pipeline Flow */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* 1. Nabta Yesterday Balance */}
         <div className="relative p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              1. Nabta Yesterday Balance
+              1. Yesterday Balance
             </span>
             <button
               onClick={() => {
@@ -134,32 +138,32 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
           </div>
         </div>
 
-        {/* 2. Jahed Balance (Deduction) */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
+        {/* 2. Total Client Payments (Add) */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              2. Jahed Balance (Profit)
+              2. Client Payments
             </span>
-            <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
-              (− Deduct)
+            <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400">
+              (+ Add)
             </span>
           </div>
 
           <div className="mt-3">
             <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              {formatAED(jahedBalance)}
+              {formatAED(ordersPaid)}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              Sum of daily order profit
+              Money collected from clients
             </p>
           </div>
         </div>
 
-        {/* 3. Paid Amount (Deduction) */}
+        {/* 3. Expenses/Vouchers (Deduct) */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              3. Total Paid Amount
+              3. Expenses
             </span>
             <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
               (− Deduct)
@@ -167,11 +171,11 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
           </div>
 
           <div className="mt-3">
-            <p className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
+            <p className="text-2xl font-black font-mono text-rose-500 dark:text-rose-400">
               {formatAED(paidAmount)}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              {dayPayments.length} payment {dayPayments.length === 1 ? 'record' : 'records'} today
+              {dayPayments.length} payment {dayPayments.length === 1 ? 'record' : 'records'}
             </p>
           </div>
         </div>
@@ -184,19 +188,40 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider opacity-90">
-              4. Nabta Today Balance
+              4. Nabta Balance
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/20">
-              Carry Forward
+              Today
             </span>
           </div>
 
           <div className="mt-3">
-            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight">
+            <p className="text-2xl font-black font-mono tracking-tight">
               {formatAED(todayBalance)}
             </p>
             <p className="text-[11px] opacity-80 mt-1 font-medium">
-              = Yesterday ({formatAED(yesterdayBalance)}) − Jahed ({formatAED(jahedBalance)}) − Paid ({formatAED(paidAmount)})
+              = Prev + Payments - Exp
+            </p>
+          </div>
+        </div>
+
+        {/* 5. Jahed Balance (No Pay) */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-amber-500/30 dark:border-amber-500/20 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              5. Jahed Balance
+            </span>
+            <span className="text-xs font-bold text-amber-500 dark:text-amber-400">
+              (No Pay)
+            </span>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
+              {formatAED(jahedBalance)}
+            </p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              Outstanding debt owed by clients
             </p>
           </div>
         </div>

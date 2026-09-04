@@ -86,8 +86,9 @@ export function formatDailyTelegramSummary(params: {
   totalQty: number;
   totalNabtaBill: number;
   totalClientBill: number;
-  jahedProfit: number;
-  paidAmount: number;
+  jahedBalance: number;
+  ordersPaid: number;
+  expensesPaid: number;
   nabtaYesterdayBalance: number;
   nabtaTodayBalance: number;
   reportLink?: string;
@@ -98,8 +99,9 @@ export function formatDailyTelegramSummary(params: {
     totalQty,
     totalNabtaBill,
     totalClientBill,
-    jahedProfit,
-    paidAmount,
+    jahedBalance,
+    ordersPaid,
+    expensesPaid,
     nabtaYesterdayBalance,
     nabtaTodayBalance,
     reportLink,
@@ -111,13 +113,13 @@ export function formatDailyTelegramSummary(params: {
 📦 <b>Orders:</b> ${ordersCount} orders (${totalQty} units)
 💰 <b>Nabta Bill (Cost):</b> AED ${totalNabtaBill.toFixed(2)}
 💵 <b>Client Bill:</b> AED ${totalClientBill.toFixed(2)}
-🟢 <b>Jahed Balance (Profit):</b> <b>+AED ${jahedProfit.toFixed(2)}</b>
+🟢 <b>Jahed Balance (No Pay):</b> <b>AED ${jahedBalance.toFixed(2)}</b>
 
 ══════════════════════
 <b>DAY BALANCE CARRY-FORWARD:</b>
-• <b>Nabta Yesterday Balance:</b> AED ${nabtaYesterdayBalance.toFixed(2)}
-• <b>(−) Jahed Profit Deduct:</b> AED ${jahedProfit.toFixed(2)}
-• <b>(−) Total Paid Out:</b> AED ${paidAmount.toFixed(2)}
+• <b>Yesterday Balance:</b> AED ${nabtaYesterdayBalance.toFixed(2)}
+• <b>(+) Client Payments:</b> AED ${ordersPaid.toFixed(2)}
+• <b>(−) Total Expenses:</b> AED ${expensesPaid.toFixed(2)}
 ━━━━━━━━━━━━━━━━━━━━━━
 🏁 <b>Nabta Today Balance:</b> <b>AED ${nabtaTodayBalance.toFixed(2)}</b>
 ══════════════════════

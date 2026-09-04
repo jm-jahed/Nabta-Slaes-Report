@@ -45,7 +45,7 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
             </span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 hidden sm:block">
-            Nabta Bill (Qty × Cost) | Client Bill (Qty × Client Price) | Jahed Balance (Profit)
+            Nabta Bill (Qty × Cost) | Client Bill (Qty × Client Price) | Jahed Balance (No Pay)
           </p>
         </div>
 
@@ -148,10 +148,10 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                       <p className="text-[10px] text-slate-400 font-semibold uppercase">No Pay</p>
                       <p className={`font-bold font-mono mt-0.5 text-[11px] ${noPay > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{formatAED(noPay)}</p>
                     </div>
-                    <div className={`rounded-xl p-2.5 text-center ${isProfit ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-rose-50 dark:bg-rose-950/30'}`}>
+                    <div className={`rounded-xl p-2.5 text-center ${order.jahed_balance > 0 ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-emerald-50 dark:bg-emerald-950/30'}`}>
                       <p className="text-[10px] text-slate-400 font-semibold uppercase">Jahed</p>
-                      <p className={`font-bold font-mono mt-0.5 text-[11px] ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                        {isProfit ? '+' : ''}{formatAED(order.jahed_balance)}
+                      <p className={`font-bold font-mono mt-0.5 text-[11px] ${order.jahed_balance > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-500'}`}>
+                        {formatAED(order.jahed_balance)}
                       </p>
                     </div>
                   </div>
@@ -187,8 +187,8 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     <p className="font-black font-mono text-rose-500 text-[11px]">{formatAED(totalNoPay)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] text-emerald-500">Jahed Profit</p>
-                    <p className="font-black font-mono text-emerald-600 dark:text-emerald-400 text-[11px]">{formatAED(totalJahedBalance)}</p>
+                    <p className="text-[10px] text-amber-500">Jahed Balance</p>
+                    <p className="font-black font-mono text-amber-600 dark:text-amber-400 text-[11px]">{formatAED(totalJahedBalance)}</p>
                   </div>
                 </div>
               </div>
@@ -252,8 +252,8 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     <td className="py-4 px-5 text-right font-bold text-slate-900 dark:text-white font-mono">{formatAED(order.nabta_bill)}</td>
                     <td className="py-4 px-5 text-right font-bold text-amber-600 dark:text-amber-400 font-mono">{formatAED(order.client_bill)}</td>
                     <td className="py-4 px-5 text-right whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-extrabold font-mono ${isProfit ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'}`}>
-                        {isProfit ? '+' : ''}{formatAED(order.jahed_balance)}
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-extrabold font-mono ${order.jahed_balance > 0 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'}`}>
+                        {formatAED(order.jahed_balance)}
                       </span>
                     </td>
                     <td className="py-4 px-5 text-right whitespace-nowrap">
@@ -294,8 +294,8 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                 <td className="py-4 px-5 text-right font-mono text-slate-900 dark:text-white">{formatAED(totalNabtaBill)}</td>
                 <td className="py-4 px-5 text-right font-mono text-amber-600 dark:text-amber-400">{formatAED(totalClientBill)}</td>
                 <td className="py-4 px-5 text-right font-mono">
-                  <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-extrabold ${totalJahedBalance >= 0 ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'}`}>
-                    {totalJahedBalance >= 0 ? '+' : ''}{formatAED(totalJahedBalance)}
+                  <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-extrabold ${totalJahedBalance > 0 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                    {formatAED(totalJahedBalance)}
                   </span>
                 </td>
                 <td className="py-4 px-5 text-right font-mono font-bold text-slate-900 dark:text-white">{formatAED(totalAmountPaid)}</td>

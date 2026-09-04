@@ -129,8 +129,10 @@ export default function NabtaLinkManager() {
       const totalQty = dayOrders.reduce((sum, o) => sum + Number(o.qty || 0), 0);
       const totalNabtaBill = dayOrders.reduce((sum, o) => sum + Number(o.nabta_bill || 0), 0);
       const totalClientBill = dayOrders.reduce((sum, o) => sum + Number(o.client_bill || 0), 0);
-      const jahedProfit = Number(daySummary?.jahed_balance || 0);
-      const paidAmount = Number(daySummary?.paid || 0);
+      const ordersPaid = dayOrders.reduce((sum, o) => sum + Number(o.amount_received || 0), 0);
+      
+      const jahedBalance = Number(daySummary?.jahed_balance || 0);
+      const expensesPaid = Number(daySummary?.paid || 0);
       const nabtaYesterdayBalance = Number(daySummary?.nabta_yesterday_balance || 0);
       const nabtaTodayBalance = Number(daySummary?.nabta_today_balance || 0);
 
@@ -140,8 +142,9 @@ export default function NabtaLinkManager() {
         totalQty,
         totalNabtaBill,
         totalClientBill,
-        jahedProfit,
-        paidAmount,
+        jahedBalance,
+        ordersPaid,
+        expensesPaid,
         nabtaYesterdayBalance,
         nabtaTodayBalance,
         reportLink: shareableUrl,
