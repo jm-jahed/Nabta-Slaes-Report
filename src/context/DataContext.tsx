@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Order, Payment, DaySummary } from '@/types';
 import { DataStore } from '@/lib/storage';
 import { format } from 'date-fns';
@@ -33,13 +33,51 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+/**
+ * Compute day summary locally from in-memory data.
+ * Returns null so the caller can fall back to an API fetch if no opening balance is known.
+ */
+function computeLocalSummary(
+  dateStr: string,
+  allOrders: Order[],
+  allPayments: Payment[],
+  openingBalance: number
+): DaySummary {
+  const dayOrders = allOrders.filter((o) => o.date === dateStr);
+  const dayPayments = allPayments.filter((p) => p.date === dateStr);
+
+  const jahed_balance = Number(
+    dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2)
+  );
+  const paid = Number(
+    dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2)
+  );
+  const nabta_today_balance = Number((openingBalance - jahed_balance - paid).toFixed(2));
+
+  return {
+    date: dateStr,
+    nabta_yesterday_balance: openingBalance,
+    jahed_balance,
+    paid,
+    nabta_today_balance,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDateState] = useState<string>(
+    format(new Date(), 'yyyy-MM-dd')
+  );
   const [daySummary, setDaySummary] = useState<DaySummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Cache: date -> opening balance (nabta_yesterday_balance) fetched from server
+  const openingBalanceCache = useRef<Map<string, number>>(new Map());
+  // Track whether initial data load has completed
+  const initialLoadDone = useRef(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -53,9 +91,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const loadData = useCallback(async () => {
+  // ─── Single full data load (runs once on mount) ───────────────────────────
+  const loadData = useCallback(async (targetDate?: string) => {
     setIsLoading(true);
     try {
+      const date = targetDate || selectedDate;
       const [fetchedOrders, fetchedPayments] = await Promise.all([
         DataStore.getOrders(),
         DataStore.getPayments(),
@@ -63,37 +103,86 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setOrders(fetchedOrders);
       setPayments(fetchedPayments);
 
-      const summary = await DataStore.getDaySummaryForDate(selectedDate, fetchedOrders, fetchedPayments);
+      // Fetch the authoritative summary for the current date (includes opening balance)
+      const summary = await DataStore.getDaySummaryForDate(date, fetchedOrders, fetchedPayments);
       setDaySummary(summary);
+
+      // Cache the opening balance for this date
+      openingBalanceCache.current.set(date, summary.nabta_yesterday_balance);
+      initialLoadDone.current = true;
     } catch (err) {
       console.error('Failed to load data:', err);
       showToast('Error loading records', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [selectedDate, showToast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showToast]); // NOTE: selectedDate intentionally NOT in deps to avoid re-fetch on date change
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadData(selectedDate);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount
 
-  // Recalculate summary whenever selectedDate changes
+  // ─── On date change: show instantly from cache, then refresh opening balance ─
+  const setSelectedDate = useCallback((date: string) => {
+    setSelectedDateState(date);
+  }, []);
+
+  const ordersRef = useRef<Order[]>([]);
+  const paymentsRef = useRef<Payment[]>([]);
+
+  useEffect(() => { ordersRef.current = orders; }, [orders]);
+  useEffect(() => { paymentsRef.current = payments; }, [payments]);
+
+  // ─── Rewrite the date-switch effect using refs ────────────────────────────
+  const prevDateRef = useRef<string>('');
   useEffect(() => {
-    if (orders.length >= 0) {
-      DataStore.getDaySummaryForDate(selectedDate, orders, payments).then((summary) => {
-        setDaySummary(summary);
-      });
+    const date = selectedDate;
+    if (!initialLoadDone.current || date === prevDateRef.current) return;
+    prevDateRef.current = date;
+
+    const currentOrders = ordersRef.current;
+    const currentPayments = paymentsRef.current;
+    const cached = openingBalanceCache.current.get(date);
+
+    if (cached !== undefined) {
+      // Instant render — no network call
+      setDaySummary(computeLocalSummary(date, currentOrders, currentPayments, cached));
+    } else {
+      // Show provisional instantly, then fetch real opening balance
+      setDaySummary(computeLocalSummary(date, currentOrders, currentPayments, 0));
+      DataStore.getDaySummaryForDate(date, currentOrders, currentPayments)
+        .then((serverSummary) => {
+          openingBalanceCache.current.set(date, serverSummary.nabta_yesterday_balance);
+          setDaySummary(serverSummary);
+        })
+        .catch(console.error);
     }
-  }, [selectedDate, orders, payments]);
+  }, [selectedDate]);
 
-  const addOrder = async (orderInput: Omit<Order, 'id' | 'nabta_bill' | 'client_bill' | 'jahed_balance' | 'created_at' | 'updated_at'>) => {
+  // ─── Mutators: optimistic in-memory updates ───────────────────────────────
+  const refreshSummaryForDate = useCallback((date: string, updatedOrders: Order[], updatedPayments: Payment[]) => {
+    const cached = openingBalanceCache.current.get(date);
+    if (cached !== undefined) {
+      setDaySummary(computeLocalSummary(date, updatedOrders, updatedPayments, cached));
+    } else {
+      DataStore.getDaySummaryForDate(date, updatedOrders, updatedPayments)
+        .then((s) => {
+          openingBalanceCache.current.set(date, s.nabta_yesterday_balance);
+          setDaySummary(s);
+        })
+        .catch(console.error);
+    }
+  }, []);
+
+  const addOrder = async (
+    orderInput: Omit<Order, 'id' | 'nabta_bill' | 'client_bill' | 'jahed_balance' | 'created_at' | 'updated_at'>
+  ) => {
     const newOrder = await DataStore.createOrder(orderInput);
     const updatedOrders = [newOrder, ...orders];
     setOrders(updatedOrders);
-    
-    // update summary
-    const updatedSummary = await DataStore.getDaySummaryForDate(selectedDate, updatedOrders, payments);
-    setDaySummary(updatedSummary);
+    refreshSummaryForDate(selectedDate, updatedOrders, payments);
     showToast(`Order for ${newOrder.client_name} created successfully!`, 'success');
     return newOrder;
   };
@@ -102,10 +191,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const updated = await DataStore.updateOrder(order);
     const updatedOrders = orders.map((o) => (o.id === updated.id ? updated : o));
     setOrders(updatedOrders);
-
-    const updatedSummary = await DataStore.getDaySummaryForDate(selectedDate, updatedOrders, payments);
-    setDaySummary(updatedSummary);
-    showToast(`Order updated successfully!`, 'success');
+    refreshSummaryForDate(selectedDate, updatedOrders, payments);
+    showToast('Order updated successfully!', 'success');
     return updated;
   };
 
@@ -114,9 +201,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (success) {
       const updatedOrders = orders.filter((o) => o.id !== id);
       setOrders(updatedOrders);
-
-      const updatedSummary = await DataStore.getDaySummaryForDate(selectedDate, updatedOrders, payments);
-      setDaySummary(updatedSummary);
+      refreshSummaryForDate(selectedDate, updatedOrders, payments);
       showToast('Order removed', 'info');
       return true;
     }
@@ -127,9 +212,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const newPayment = await DataStore.createPayment(paymentInput);
     const updatedPayments = [newPayment, ...payments];
     setPayments(updatedPayments);
-
-    const updatedSummary = await DataStore.getDaySummaryForDate(selectedDate, orders, updatedPayments);
-    setDaySummary(updatedSummary);
+    refreshSummaryForDate(selectedDate, orders, updatedPayments);
     showToast(`Payment of AED ${newPayment.amount} recorded!`, 'success');
     return newPayment;
   };
@@ -139,9 +222,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (success) {
       const updatedPayments = payments.filter((p) => p.id !== id);
       setPayments(updatedPayments);
-
-      const updatedSummary = await DataStore.getDaySummaryForDate(selectedDate, orders, updatedPayments);
-      setDaySummary(updatedSummary);
+      refreshSummaryForDate(selectedDate, orders, updatedPayments);
       showToast('Payment voucher removed', 'info');
       return true;
     }
@@ -150,13 +231,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const updateYesterdayOpeningBalance = async (amount: number) => {
     const updated = await DataStore.updateYesterdayBalance(selectedDate, amount);
+    // Update cache with new opening balance
+    openingBalanceCache.current.set(selectedDate, updated.nabta_yesterday_balance);
     setDaySummary(updated);
     showToast(`Yesterday opening balance updated to AED ${amount}`, 'success');
   };
 
   const resetToDefaultData = () => {
     DataStore.resetToSeed();
-    loadData();
+    openingBalanceCache.current.clear();
+    initialLoadDone.current = false;
+    loadData(selectedDate);
     showToast('Reset to demo sample data', 'info');
   };
 
@@ -178,7 +263,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         addPayment,
         removePayment,
         updateYesterdayOpeningBalance,
-        refreshData: loadData,
+        refreshData: () => {
+          openingBalanceCache.current.clear();
+          return loadData(selectedDate);
+        },
         resetToDefaultData,
       }}
     >
