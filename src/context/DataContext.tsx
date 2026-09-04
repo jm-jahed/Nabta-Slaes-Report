@@ -189,18 +189,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     orderInput: Omit<Order, 'id' | 'nabta_bill' | 'client_bill' | 'jahed_balance' | 'created_at' | 'updated_at'>
   ) => {
     const newOrder = await DataStore.createOrder(orderInput);
-    const updatedOrders = [newOrder, ...orders];
-    setOrders(updatedOrders);
-    refreshSummaryForDate(selectedDate, updatedOrders, payments);
+    setOrders((prev) => {
+      const updatedOrders = [newOrder, ...prev];
+      refreshSummaryForDate(selectedDate, updatedOrders, paymentsRef.current);
+      return updatedOrders;
+    });
     showToast(`Order for ${newOrder.client_name} created successfully!`, 'success');
     return newOrder;
   };
 
   const editOrder = async (order: Order) => {
     const updated = await DataStore.updateOrder(order);
-    const updatedOrders = orders.map((o) => (o.id === updated.id ? updated : o));
-    setOrders(updatedOrders);
-    refreshSummaryForDate(selectedDate, updatedOrders, payments);
+    setOrders((prev) => {
+      const updatedOrders = prev.map((o) => (o.id === updated.id ? updated : o));
+      refreshSummaryForDate(selectedDate, updatedOrders, paymentsRef.current);
+      return updatedOrders;
+    });
     showToast('Order updated successfully!', 'success');
     return updated;
   };
@@ -208,9 +212,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const removeOrder = async (id: string) => {
     const success = await DataStore.deleteOrder(id);
     if (success) {
-      const updatedOrders = orders.filter((o) => o.id !== id);
-      setOrders(updatedOrders);
-      refreshSummaryForDate(selectedDate, updatedOrders, payments);
+      setOrders((prev) => {
+        const updatedOrders = prev.filter((o) => o.id !== id);
+        refreshSummaryForDate(selectedDate, updatedOrders, paymentsRef.current);
+        return updatedOrders;
+      });
       showToast('Order removed', 'info');
       return true;
     }
@@ -219,9 +225,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const addPayment = async (paymentInput: Omit<Payment, 'id' | 'created_at'>) => {
     const newPayment = await DataStore.createPayment(paymentInput);
-    const updatedPayments = [newPayment, ...payments];
-    setPayments(updatedPayments);
-    refreshSummaryForDate(selectedDate, orders, updatedPayments);
+    setPayments((prev) => {
+      const updatedPayments = [newPayment, ...prev];
+      refreshSummaryForDate(selectedDate, ordersRef.current, updatedPayments);
+      return updatedPayments;
+    });
     showToast(`Payment of AED ${newPayment.amount} recorded!`, 'success');
     return newPayment;
   };
@@ -229,9 +237,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const removePayment = async (id: string) => {
     const success = await DataStore.deletePayment(id);
     if (success) {
-      const updatedPayments = payments.filter((p) => p.id !== id);
-      setPayments(updatedPayments);
-      refreshSummaryForDate(selectedDate, orders, updatedPayments);
+      setPayments((prev) => {
+        const updatedPayments = prev.filter((p) => p.id !== id);
+        refreshSummaryForDate(selectedDate, ordersRef.current, updatedPayments);
+        return updatedPayments;
+      });
       showToast('Payment voucher removed', 'info');
       return true;
     }

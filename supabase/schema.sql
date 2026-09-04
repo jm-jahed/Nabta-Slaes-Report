@@ -57,18 +57,28 @@ CREATE TABLE IF NOT EXISTS public.nabta_tokens (
     created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 );
 
--- 5. ROW LEVEL SECURITY — Allow anon access (single-admin internal app)
+-- 5. CLIENTS TABLE
+CREATE TABLE IF NOT EXISTS public.clients (
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+);
+
+-- 6. ROW LEVEL SECURITY — Allow anon access (single-admin internal app)
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.day_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nabta_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "anon_orders" ON public.orders;
 DROP POLICY IF EXISTS "anon_payments" ON public.payments;
 DROP POLICY IF EXISTS "anon_summaries" ON public.day_summaries;
 DROP POLICY IF EXISTS "anon_tokens" ON public.nabta_tokens;
+DROP POLICY IF EXISTS "anon_clients" ON public.clients;
 
 CREATE POLICY "anon_orders" ON public.orders FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "anon_payments" ON public.payments FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "anon_summaries" ON public.day_summaries FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "anon_tokens" ON public.nabta_tokens FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_clients" ON public.clients FOR ALL TO anon USING (true) WITH CHECK (true);

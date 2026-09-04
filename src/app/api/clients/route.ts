@@ -19,14 +19,14 @@ export async function POST(req: Request) {
     if (!name || name.trim() === '') return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
     const trimmedName = name.trim();
-    const id = 'cli-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
-    const newClient = {
-      id,
-      name: trimmedName,
-      created_at: new Date().toISOString()
-    };
 
     if (!isSupabaseConfigured()) {
+      const id = 'cli-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+      const newClient = {
+        id,
+        name: trimmedName,
+        created_at: new Date().toISOString()
+      };
       const clients = LocalFS.getClients();
       if (clients.some((c: any) => c.name.toLowerCase() === trimmedName.toLowerCase())) {
         return NextResponse.json({ error: 'Client already exists' }, { status: 409 });
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Client already exists' }, { status: 409 });
     }
 
-    const { data, error } = await supabase.from('clients').insert(newClient).select().single();
+    const { data, error } = await supabase.from('clients').insert({ name: trimmedName }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } catch (err: any) {
