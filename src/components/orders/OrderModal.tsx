@@ -97,7 +97,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           client_bill,
           jahed_balance,
           notes: notes.trim(),
-          paid_status: computed_paid_status,
+          paid_status: computed_paid_status as 'Unpaid' | 'Paid' | 'Partial',
           amount_received: amt,
         });
       } else {
@@ -108,7 +108,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           cost_price: numCost,
           client_price: numClientPrice,
           notes: notes.trim(),
-          paid_status: computed_paid_status,
+          paid_status: computed_paid_status as 'Unpaid' | 'Paid' | 'Partial',
           amount_received: amt,
         });
         // Trigger celebratory confetti on new order

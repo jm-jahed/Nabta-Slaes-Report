@@ -7,13 +7,27 @@ async function main() {
 
   try {
     const res = await fetch(`${baseUrl}/api/orders`, { headers });
-    const text = await res.text();
-    if (res.status !== 200) {
-      console.log('Vercel API failed:', res.status, text);
-      return;
-    }
+    let text = await res.text();
+    let orders = JSON.parse(text);
 
-    const orders = JSON.parse(text);
+    // Create new order
+    const createRes = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        date: '2026-09-03',
+        client_name: 'Al Mallah',
+        qty: 10,
+        cost_price: 4,
+        client_price: 5,
+        amount_received: 20
+      })
+    });
+    const createdOrder = await createRes.json();
+
+    // Re-fetch to verify persistence
+    const res2 = await fetch(`${baseUrl}/api/orders`, { headers });
+    orders = await res2.json();
     const hasSchema = orders.length > 0 ? ('amount_received' in orders[0] && 'paid_status' in orders[0]) : true;
 
     const sep1 = orders.filter(o => o.date === '2026-09-01');
@@ -36,7 +50,7 @@ async function main() {
     console.log(`No Pay: ${noPayAmount === 30 ? 'PASS' : 'FAIL'}`);
 
     // Nabta report check: fetch report API
-    const nabtaRes = await fetch(`${baseUrl}/api/nabta/report`, { headers });
+    const nabtaRes = await fetch(`${baseUrl}/api/nabta/report?t=${Date.now()}`, { headers });
     const nabtaData = nabtaRes.status === 200 ? JSON.parse(await nabtaRes.text()) : null;
     const globalNoPay = nabtaData?.globalNoPayClients?.find(c => c.client_name === 'Al Mallah')?.amount;
     
