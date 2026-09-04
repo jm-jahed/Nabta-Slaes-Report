@@ -18,10 +18,12 @@ interface OrderModalProps {
  * +X  → client paid X AED           → amount_received = X
  * -X  → client owes X AED (No Pay)  → amount_received = client_bill - X
  *  0  → no payment                  → amount_received = 0
+ * EMPTY → client paid FULL Client Bill → amount_received = client_bill
  */
 function parseBalance(balanceStr: string, client_bill: number): number {
   const s = balanceStr.trim();
-  if (s === '' || s === '+' || s === '-') return 0;
+  if (s === '') return client_bill; // EMPTY = fully paid
+  if (s === '+' || s === '-') return 0;
 
   if (s.startsWith('+')) {
     const v = parseFloat(s.slice(1));
@@ -256,7 +258,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           </div>
 
           {/* Row 2: Qty / Cost Price / Client Price */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
                 Qty *
@@ -268,7 +270,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
                 required
                 value={qty}
                 onChange={(e) => setQty(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none min-h-[44px]"
               />
             </div>
 
@@ -283,7 +285,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
                 required
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none min-h-[44px]"
               />
             </div>
 
@@ -304,7 +306,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
                 required
                 value={clientPrice}
                 onChange={(e) => setClientPrice(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 text-sm font-bold text-amber-800 dark:text-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 text-sm font-bold text-amber-800 dark:text-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none min-h-[44px]"
               />
             </div>
           </div>
@@ -331,7 +333,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">+20</span> = paid 20 AED &nbsp;·&nbsp;
               <span className="font-semibold text-rose-500">-30</span> = owes 30 AED &nbsp;·&nbsp;
-              leave empty = no payment
+              leave empty = fully paid &nbsp;·&nbsp; 0 = no payment
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -339,7 +341,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
                 <input
                   type="text"
                   inputMode="decimal"
-                  placeholder="+20 or -30 or 0"
+                  placeholder="leave empty for full payment"
                   value={balanceInput}
                   onChange={(e) => handleBalanceChange(e.target.value)}
                   className={`w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border-2 text-base font-bold text-slate-900 dark:text-white focus:ring-4 focus:outline-none transition-all shadow-sm ${
