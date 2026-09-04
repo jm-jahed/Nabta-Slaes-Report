@@ -22,6 +22,14 @@ export async function POST(req: Request) {
     const nabta_bill = Number((numQty * numCost).toFixed(2));
     const client_bill = Number((numQty * numClientPrice).toFixed(2));
     const jahed_balance = Number((client_bill - nabta_bill).toFixed(2));
+    const amtReceived = Number(amount_received) || 0;
+
+    let computed_paid_status = 'Unpaid';
+    if (amtReceived >= client_bill && client_bill > 0) {
+      computed_paid_status = 'Paid';
+    } else if (amtReceived > 0) {
+      computed_paid_status = 'Partial';
+    }
 
     const id = 'ord-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
     
@@ -30,8 +38,8 @@ export async function POST(req: Request) {
       qty: numQty, cost_price: numCost, client_price: numClientPrice,
       nabta_bill, client_bill, jahed_balance,
       notes: notes || '',
-      paid_status: paid_status || 'Unpaid',
-      amount_received: Number(amount_received) || 0,
+      paid_status: computed_paid_status,
+      amount_received: amtReceived,
       created_at: new Date().toISOString()
     };
 
@@ -60,14 +68,22 @@ export async function PUT(req: Request) {
     const nabta_bill = Number((numQty * numCost).toFixed(2));
     const client_bill = Number((numQty * numClientPrice).toFixed(2));
     const jahed_balance = Number((client_bill - nabta_bill).toFixed(2));
+    const amtReceived = Number(body.amount_received) || 0;
+
+    let computed_paid_status = 'Unpaid';
+    if (amtReceived >= client_bill && client_bill > 0) {
+      computed_paid_status = 'Paid';
+    } else if (amtReceived > 0) {
+      computed_paid_status = 'Partial';
+    }
 
     const updatedData = { 
       ...body, 
       nabta_bill, 
       client_bill, 
       jahed_balance, 
-      paid_status: body.paid_status || 'Unpaid',
-      amount_received: Number(body.amount_received) || 0,
+      paid_status: computed_paid_status,
+      amount_received: amtReceived,
       updated_at: new Date().toISOString() 
     };
 

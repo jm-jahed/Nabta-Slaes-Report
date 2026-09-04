@@ -14,7 +14,7 @@ interface OrderModalProps {
 }
 
 export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalProps) {
-  const { addOrder, editOrder, selectedDate } = useData();
+  const { addOrder, editOrder, selectedDate, orders } = useData();
 
   const [date, setDate] = useState(selectedDate);
   const [clientName, setClientName] = useState('');
@@ -22,8 +22,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
   const [costPrice, setCostPrice] = useState<number | string>(4);
   const [clientPrice, setClientPrice] = useState<number | string>(5);
   const [notes, setNotes] = useState('');
-  const [paidStatus, setPaidStatus] = useState<'Paid' | 'Unpaid' | 'Partial'>('Unpaid');
-  const [amountReceived, setAmountReceived] = useState<number | string>(0);
+  const [amountReceived, setAmountReceived] = useState<number | string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -34,8 +33,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
       setCostPrice(orderToEdit.cost_price);
       setClientPrice(orderToEdit.client_price);
       setNotes(orderToEdit.notes || '');
-      setPaidStatus(orderToEdit.paid_status || 'Unpaid');
-      setAmountReceived(orderToEdit.amount_received || 0);
+      setAmountReceived(orderToEdit.amount_received || '');
     } else {
       setDate(selectedDate);
       setClientName('');
@@ -43,10 +41,24 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
       setCostPrice(4);
       setClientPrice(5);
       setNotes('');
-      setPaidStatus('Unpaid');
-      setAmountReceived(0);
+      setAmountReceived('');
     }
   }, [orderToEdit, selectedDate, isOpen]);
+
+  const previousNoPay = React.useMemo(() => {
+    if (!clientName.trim() || !orders) return 0;
+    
+    return orders.reduce((sum, o) => {
+      // Don't include the current order if editing
+      if (orderToEdit && o.id === orderToEdit.id) return sum;
+      
+      if (o.client_name.toLowerCase().trim() === clientName.toLowerCase().trim()) {
+        const noPay = Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
+        return sum + noPay;
+      }
+      return sum;
+    }, 0);
+  }, [clientName, orders, orderToEdit]);
 
   if (!isOpen) return null;
 
@@ -66,6 +78,11 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
       return;
     }
 
+    const amt = Number(amountReceived) || 0;
+    let computed_paid_status = 'Unpaid';
+    if (amt >= client_bill && client_bill > 0) computed_paid_status = 'Paid';
+    else if (amt > 0) computed_paid_status = 'Partial';
+
     setIsSubmitting(true);
     try {
       if (orderToEdit) {
@@ -80,8 +97,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           client_bill,
           jahed_balance,
           notes: notes.trim(),
-          paid_status: paidStatus,
-          amount_received: Number(amountReceived) || 0,
+          paid_status: computed_paid_status,
+          amount_received: amt,
         });
       } else {
         await addOrder({
@@ -91,8 +108,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           cost_price: numCost,
           client_price: numClientPrice,
           notes: notes.trim(),
-          paid_status: paidStatus,
-          amount_received: Number(amountReceived) || 0,
+          paid_status: computed_paid_status,
+          amount_received: amt,
         });
         // Trigger celebratory confetti on new order
         try {
@@ -240,39 +257,46 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Paid Status */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                Paid Status
+          <div className="grid grid-cols-1 gap-4">
+            {/* Amount Received / Paid */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+                Amount Paid / Received (AED)
               </label>
-              <select
-                value={paidStatus}
-                onChange={(e) => setPaidStatus(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              >
-                <option value="Unpaid">Unpaid</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid">Paid</option>
-              </select>
-            </div>
-
-            {/* Amount Received (Visible only if Partial) */}
-            {paidStatus === 'Partial' && (
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                  Amount Received (AED)
-                </label>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <input
                   type="number"
                   min="0"
                   step="any"
+                  placeholder="0.00"
                   value={amountReceived}
                   onChange={(e) => setAmountReceived(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full sm:w-1/2 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500/30 text-base font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none transition-all shadow-sm"
                 />
+                
+                {/* Live Current Order No Pay */}
+                <div className="w-full sm:w-1/2 flex items-center justify-between sm:justify-end gap-3 text-sm">
+                  <span className="font-semibold text-slate-500 dark:text-slate-400">Order No Pay:</span>
+                  <span className={`font-mono font-black text-lg ${Math.max(0, client_bill - (Number(amountReceived) || 0)) > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    {formatAED(Math.max(0, client_bill - (Number(amountReceived) || 0)))}
+                  </span>
+                </div>
               </div>
-            )}
+              
+              {/* Previous No Pay Visibility */}
+              {previousNoPay > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 flex flex-col gap-1 text-xs">
+                  <div className="flex justify-between items-center text-rose-500/80 font-semibold">
+                    <span>Previous Outstanding No Pay:</span>
+                    <span className="font-mono">{formatAED(previousNoPay)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-bold">
+                    <span>Total Cumulative No Pay:</span>
+                    <span className="font-mono">{formatAED(previousNoPay + Math.max(0, client_bill - (Number(amountReceived) || 0)))}</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Live Calculation Preview Card */}

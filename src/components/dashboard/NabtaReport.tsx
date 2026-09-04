@@ -25,6 +25,8 @@ const DAYS_PER_PAGE = 10;
 export default function NabtaReport() {
   const { logout, user } = useAuth();
   const [dayBlocks, setDayBlocks] = useState<NabtaDayBlock[]>([]);
+  const [globalNoPayClients, setGlobalNoPayClients] = useState<Array<{ client_name: string, amount: number }>>([]);
+  const [totalGlobalNoPay, setTotalGlobalNoPay] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isValid, setIsValid] = useState(true);
@@ -41,6 +43,8 @@ export default function NabtaReport() {
       if (res.ok && data.valid) {
         setIsValid(true);
         setDayBlocks(data.dayBlocks || []);
+        setGlobalNoPayClients(data.globalNoPayClients || []);
+        setTotalGlobalNoPay(data.totalGlobalNoPay || 0);
       } else {
         setIsValid(false);
         setErrorMessage(data.error || 'Failed to load report data.');
@@ -321,6 +325,32 @@ export default function NabtaReport() {
             </div>
           </div>
         </header>
+
+        {/* Global Outstanding No Pay Summary */}
+        {totalGlobalNoPay > 0 && (
+          <section className="p-4 sm:p-7 rounded-3xl bg-rose-500/5 border border-rose-500/20 shadow-sm space-y-4 print:border-black print:bg-transparent">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldAlert className="w-5 h-5 text-rose-500" />
+              <h2 className="text-base sm:text-lg font-black text-rose-400 print:text-black">
+                Current Total Outstanding No Pay
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {globalNoPayClients.map((c, i) => (
+                <div key={`global-nopay-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 shadow-sm print:border-black print:bg-transparent">
+                  <span className="text-sm font-bold text-white print:text-black">{c.client_name}</span>
+                  <span className="text-sm font-mono font-bold text-rose-400 print:text-black">{formatAED(c.amount)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 mt-3 border-t border-rose-500/20 flex items-center justify-between print:border-black">
+              <span className="text-sm font-bold text-slate-300 print:text-black">Total Outstanding:</span>
+              <span className="text-lg font-black font-mono text-rose-500 print:text-black">{formatAED(totalGlobalNoPay)}</span>
+            </div>
+          </section>
+        )}
 
         {/* 2. CHRONOLOGICAL 10 DAYS PER PAGE LIST */}
         <div className="space-y-6 sm:space-y-8 w-full">

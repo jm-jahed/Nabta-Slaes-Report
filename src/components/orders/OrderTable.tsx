@@ -25,6 +25,8 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
   const totalNabtaBill = orders.reduce((sum, o) => sum + Number(o.nabta_bill || 0), 0);
   const totalClientBill = orders.reduce((sum, o) => sum + Number(o.client_bill || 0), 0);
   const totalJahedBalance = orders.reduce((sum, o) => sum + Number(o.jahed_balance || 0), 0);
+  const totalAmountPaid = orders.reduce((sum, o) => sum + Number(o.amount_received || 0), 0);
+  const totalNoPay = orders.reduce((sum, o) => sum + Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0)), 0);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-900/5 overflow-hidden">
@@ -68,7 +70,8 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
               <th className="py-3.5 px-5 text-right">Nabta Bill</th>
               <th className="py-3.5 px-5 text-right">Client Bill</th>
               <th className="py-3.5 px-5 text-right">Jahed Balance</th>
-              <th className="py-3.5 px-5 text-center">Payment Status</th>
+              <th className="py-3.5 px-5 text-right">Amount Paid</th>
+              <th className="py-3.5 px-5 text-right">No Pay</th>
               <th className="py-3.5 px-5 text-center">Actions</th>
             </tr>
           </thead>
@@ -154,19 +157,28 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                       </span>
                     </td>
 
-                    {/* Payment Status */}
-                    <td className="py-4 px-5 text-center whitespace-nowrap">
+                    {/* Amount Paid */}
+                    <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <div className="font-bold text-slate-900 dark:text-white font-mono">
+                        {formatAED(order.amount_received || 0)}
+                      </div>
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
+                        className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
                           order.paid_status === 'Paid'
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             : order.paid_status === 'Partial'
-                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}
                       >
                         {order.paid_status || 'Unpaid'}
-                        {order.paid_status === 'Partial' ? ` (${formatAED(order.amount_received || 0)})` : ''}
+                      </span>
+                    </td>
+
+                    {/* No Pay */}
+                    <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <span className={`font-bold font-mono ${Math.max(0, Number(order.client_bill || 0) - Number(order.amount_received || 0)) > 0 ? 'text-rose-500' : 'text-slate-400 dark:text-slate-600'}`}>
+                        {formatAED(Math.max(0, Number(order.client_bill || 0) - Number(order.amount_received || 0)))}
                       </span>
                     </td>
 
@@ -243,7 +255,12 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     {formatAED(totalJahedBalance)}
                   </span>
                 </td>
-                <td></td>
+                <td className="py-4 px-5 text-right font-mono font-bold text-slate-900 dark:text-white">
+                  {formatAED(totalAmountPaid)}
+                </td>
+                <td className="py-4 px-5 text-right font-mono font-bold text-rose-500">
+                  {formatAED(totalNoPay)}
+                </td>
                 <td></td>
               </tr>
             </tfoot>

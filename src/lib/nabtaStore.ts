@@ -44,7 +44,7 @@ export function getSanitizedNabtaDayBlocks(
   orders: Order[] = [],
   payments: Payment[] = [],
   summaries: Record<string, DaySummary> = {}
-): NabtaDayBlock[] {
+): { dayBlocks: NabtaDayBlock[], globalNoPayClients: Array<{ client_name: string, amount: number }>, totalGlobalNoPay: number } {
   // 1. Collect all unique dates across orders and payments
   const datesSet = new Set<string>();
   orders.forEach((o) => o.date && datesSet.add(o.date));
@@ -55,8 +55,18 @@ export function getSanitizedNabtaDayBlocks(
     datesSet.add(format(new Date(), 'yyyy-MM-dd'));
   }
 
-  // 2. Sort dates chronologically from oldest to newest
   const sortedDates = Array.from(datesSet).sort((a, b) => a.localeCompare(b));
+
+  // Global No Pay calculation across ALL orders
+  const globalNoPayMap = new Map<string, number>();
+  orders.forEach((o) => {
+    const noPayAmount = Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
+    if (noPayAmount > 0) {
+      globalNoPayMap.set(o.client_name, (globalNoPayMap.get(o.client_name) || 0) + noPayAmount);
+    }
+  });
+  const globalNoPayClients = Array.from(globalNoPayMap.entries()).map(([client_name, amount]) => ({ client_name, amount: Number(amount.toFixed(2)) }));
+  const totalGlobalNoPay = Number(globalNoPayClients.reduce((sum, c) => sum + c.amount, 0).toFixed(2));
 
   // 3. Build each day's block with calculations and carry forward
   let runningYesterdayBalance = 0.0; // Starting baseline
@@ -95,15 +105,7 @@ export function getSanitizedNabtaDayBlocks(
     // No Pay Logic (calculate before today's balance so it can be included)
     const noPayMap = new Map<string, number>();
     dayOrders.forEach(o => {
-      let noPayAmount = 0;
-      if (o.paid_status === 'Paid') {
-        noPayAmount = 0;
-      } else if (o.paid_status === 'Partial') {
-        noPayAmount = Number(o.client_bill || 0) - Number(o.amount_received || 0);
-      } else {
-        noPayAmount = Number(o.client_bill || 0);
-      }
-      
+      const noPayAmount = Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
       if (noPayAmount > 0) {
         noPayMap.set(o.client_name, (noPayMap.get(o.client_name) || 0) + noPayAmount);
       }
@@ -150,5 +152,5 @@ export function getSanitizedNabtaDayBlocks(
     });
   }
 
-  return dayBlocks;
+  return { dayBlocks, globalNoPayClients, totalGlobalNoPay };
 }
