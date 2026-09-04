@@ -24,6 +24,15 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
   const [notes, setNotes] = useState('');
   const [amountReceived, setAmountReceived] = useState<number | string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/clients')
+      .then((res) => res.json())
+      .then((data) => setClients(Array.isArray(data) ? data : []))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (orderToEdit) {
@@ -172,7 +181,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
             </div>
 
             {/* Client Name */}
-            <div>
+            <div className="relative">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
                 Client Name *
               </label>
@@ -181,9 +190,32 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
                 required
                 placeholder="e.g. Al Noor Trading"
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                onChange={(e) => {
+                  setClientName(e.target.value);
+                  setShowAutocomplete(true);
+                }}
+                onFocus={() => setShowAutocomplete(true)}
+                onBlur={() => setTimeout(() => setShowAutocomplete(false), 200)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
+              {showAutocomplete && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {clients
+                    .filter(c => c.name.toLowerCase().includes(clientName.toLowerCase()))
+                    .map(c => (
+                      <div
+                        key={c.id}
+                        className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 text-sm font-medium text-slate-800 dark:text-slate-200"
+                        onClick={() => {
+                          setClientName(c.name);
+                          setShowAutocomplete(false);
+                        }}
+                      >
+                        {c.name}
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
 

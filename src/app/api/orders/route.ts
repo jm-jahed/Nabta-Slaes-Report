@@ -49,10 +49,26 @@ export async function POST(req: Request) {
       const orders = LocalFS.getOrders();
       orders.push(newOrder);
       LocalFS.saveOrders(orders);
+      
+      // Auto-insert client
+      const clients = LocalFS.getClients();
+      const trimmedName = client_name.trim();
+      if (!clients.some((c: any) => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+        clients.push({ id: 'cli-' + Date.now(), name: trimmedName, created_at: new Date().toISOString() });
+        LocalFS.saveClients(clients);
+      }
+
       return NextResponse.json(newOrder);
     }
 
     const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
+    
+    // Auto-insert client
+    const trimmedName = client_name.trim();
+    const { data: existingClient } = await supabase.from('clients').select('id').ilike('name', trimmedName).maybeSingle();
+    if (!existingClient) {
+      await supabase.from('clients').insert({ name: trimmedName });
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
@@ -95,6 +111,15 @@ export async function PUT(req: Request) {
       if (index !== -1) {
         orders[index] = { ...orders[index], ...updatedData };
         LocalFS.saveOrders(orders);
+        
+        // Auto-insert client
+        const clients = LocalFS.getClients();
+        const trimmedName = body.client_name?.trim();
+        if (trimmedName && !clients.some((c: any) => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+          clients.push({ id: 'cli-' + Date.now(), name: trimmedName, created_at: new Date().toISOString() });
+          LocalFS.saveClients(clients);
+        }
+
         return NextResponse.json(orders[index]);
       }
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -103,6 +128,15 @@ export async function PUT(req: Request) {
     const { data, error } = await supabase.from('orders')
       .update(updatedData)
       .eq('id', body.id).select().single();
+
+    // Auto-insert client
+    const trimmedName = body.client_name?.trim();
+    if (trimmedName) {
+      const { data: existingClient } = await supabase.from('clients').select('id').ilike('name', trimmedName).maybeSingle();
+      if (!existingClient) {
+        await supabase.from('clients').insert({ name: trimmedName });
+      }
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);

@@ -60,4 +60,8 @@ export const LocalFS = {
   // --- Day Summaries ---
   getDaySummaries: () => readData<any[]>('summaries.json', INITIAL_SUMMARIES),
   saveDaySummaries: (summaries: any[]) => writeData('summaries.json', summaries),
+
+  // --- Clients ---
+  getClients: () => readData<any[]>('clients.json', []),
+  saveClients: (clients: any[]) => writeData('clients.json', clients),
 };

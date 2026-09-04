@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Boxes,
   HelpCircle,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -51,6 +52,12 @@ const navItems = [
     href: '/settings',
     icon: Settings,
     badge: 'Bot',
+  },
+  {
+    name: 'Client Management',
+    href: '/clients',
+    icon: Users,
+    badge: 'Admin',
   },
 ];
 
