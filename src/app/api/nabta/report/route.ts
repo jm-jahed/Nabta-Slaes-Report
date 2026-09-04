@@ -85,7 +85,9 @@ export async function GET() {
         ? Number(summaries[dateStr].nabta_yesterday_balance)
         : runningBalance;
 
-      const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance + total_no_pay_amount - paid).toFixed(2));
+      // Nabta Balance = Yesterday + Total Paid (by clients) - Vouchers
+      const orders_paid = Number(sanitizedOrders.reduce((s, o) => s + Number(o.amount_received || 0), 0).toFixed(2));
+      const nabta_today_balance = Number((nabta_yesterday_balance + orders_paid - paid).toFixed(2));
       runningBalance = nabta_today_balance;
 
       let formattedDate = dateStr;
