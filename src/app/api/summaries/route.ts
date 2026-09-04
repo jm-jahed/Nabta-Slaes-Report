@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         nabta_yesterday_balance = Number(storedSummary.nabta_yesterday_balance);
       } else {
         const prevSummary = summaries.filter((s: any) => s.date < dateStr).sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
-        nabta_yesterday_balance = prevSummary ? Number(prevSummary.nabta_today_balance) : 5000;
+        nabta_yesterday_balance = prevSummary ? Number(prevSummary.nabta_today_balance) : 0;
       }
 
       const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance - paid).toFixed(2));
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
 
     const nabta_yesterday_balance = summaryRes.data?.nabta_yesterday_balance !== undefined
       ? Number(summaryRes.data.nabta_yesterday_balance)
-      : prevSummary ? Number(prevSummary.nabta_today_balance) : 5000;
+      : prevSummary ? Number(prevSummary.nabta_today_balance) : 0;
 
     const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance - paid).toFixed(2));
 

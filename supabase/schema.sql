@@ -41,10 +41,10 @@ CREATE INDEX IF NOT EXISTS idx_payments_date ON public.payments(date);
 -- 3. DAY SUMMARIES TABLE
 CREATE TABLE IF NOT EXISTS public.day_summaries (
     date TEXT PRIMARY KEY,
-    nabta_yesterday_balance NUMERIC NOT NULL DEFAULT 5000,
+    nabta_yesterday_balance NUMERIC NOT NULL DEFAULT 0,
     jahed_balance NUMERIC NOT NULL DEFAULT 0,
     paid NUMERIC NOT NULL DEFAULT 0,
-    nabta_today_balance NUMERIC NOT NULL DEFAULT 5000,
+    nabta_today_balance NUMERIC NOT NULL DEFAULT 0,
     notes TEXT DEFAULT '',
     updated_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 );

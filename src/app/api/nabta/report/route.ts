@@ -38,7 +38,7 @@ export async function GET() {
     const sortedDates = Array.from(datesSet).sort((a, b) => a.localeCompare(b));
 
     // 3. Build sanitized day blocks — NO client_price ever!
-    let runningBalance = 5000;
+    let runningBalance = 0;
     const dayBlocks = sortedDates.map((dateStr) => {
       const dayOrders = orders.filter((o) => o.date === dateStr);
       const dayPayments = payments.filter((p) => p.date === dateStr);

@@ -97,10 +97,10 @@ export const DataStore = {
 
     return {
       date: dateStr,
-      nabta_yesterday_balance: 5000,
+      nabta_yesterday_balance: 0,
       jahed_balance: 0,
       paid: 0,
-      nabta_today_balance: 5000,
+      nabta_today_balance: 0,
       updated_at: new Date().toISOString(),
     };
   },
