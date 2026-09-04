@@ -1,5 +1,5 @@
 async function main() {
-  const baseUrl = 'http://localhost:3000';
+  const baseUrl = 'https://sale-reports.vercel.app';
   const headers = {
     'Content-Type': 'application/json',
     'Cookie': 'auth_session=' + JSON.stringify({ role: 'admin', username: 'jahed2uae' })

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
 import { LocalFS } from '@/lib/localDataStore';
