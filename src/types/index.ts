@@ -9,6 +9,8 @@ export interface Order {
   client_bill: number;  // qty * client_price
   jahed_balance: number;// client_bill - nabta_bill
   notes?: string;
+  paid_status?: 'Paid' | 'Unpaid' | 'Partial';
+  amount_received?: number;
   created_at?: string;
   updated_at?: string;
 }

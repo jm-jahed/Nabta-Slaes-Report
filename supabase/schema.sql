@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     client_bill NUMERIC NOT NULL DEFAULT 0,
     jahed_balance NUMERIC NOT NULL DEFAULT 0,
     notes TEXT DEFAULT '',
+    paid_status TEXT DEFAULT 'Unpaid',
+    amount_received NUMERIC DEFAULT 0,
     created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
     updated_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 );

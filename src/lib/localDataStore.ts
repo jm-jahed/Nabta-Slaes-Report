@@ -56,6 +56,8 @@ const INITIAL_ORDERS = [
     client_bill: 112.5,
     jahed_balance: 12.5,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-01T08:00:00.000Z"
   },
   {
@@ -69,6 +71,8 @@ const INITIAL_ORDERS = [
     client_bill: 112.5,
     jahed_balance: 12.5,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-01T08:10:00.000Z"
   },
   {
@@ -82,6 +86,8 @@ const INITIAL_ORDERS = [
     client_bill: 245,
     jahed_balance: 35,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-01T08:20:00.000Z"
   },
   {
@@ -95,6 +101,8 @@ const INITIAL_ORDERS = [
     client_bill: 480,
     jahed_balance: 48,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-01T08:30:00.000Z"
   },
   {
@@ -108,6 +116,8 @@ const INITIAL_ORDERS = [
     client_bill: 112.5,
     jahed_balance: 12.5,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-02T08:00:00.000Z"
   },
   {
@@ -121,6 +131,8 @@ const INITIAL_ORDERS = [
     client_bill: 112.5,
     jahed_balance: 12.5,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-02T08:10:00.000Z"
   },
   {
@@ -134,6 +146,8 @@ const INITIAL_ORDERS = [
     client_bill: 245,
     jahed_balance: 35,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-02T08:20:00.000Z"
   },
   {
@@ -147,6 +161,8 @@ const INITIAL_ORDERS = [
     client_bill: 480,
     jahed_balance: 48,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-02T08:30:00.000Z"
   },
   {
@@ -160,6 +176,8 @@ const INITIAL_ORDERS = [
     client_bill: 120,
     jahed_balance: 40,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-02T08:40:00.000Z"
   },
   {
@@ -173,6 +191,8 @@ const INITIAL_ORDERS = [
     client_bill: 150,
     jahed_balance: 30,
     notes: "",
+    paid_status: 'Unpaid',
+    amount_received: 0,
     created_at: "2026-09-02T08:50:00.000Z"
   }
 ];

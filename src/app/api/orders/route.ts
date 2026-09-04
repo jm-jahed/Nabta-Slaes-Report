@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { date, client_name, qty, cost_price, client_price, notes } = body;
+    const { date, client_name, qty, cost_price, client_price, notes, paid_status, amount_received } = body;
 
     const numQty = Number(qty) || 0;
     const numCost = Number(cost_price) || 0;
@@ -30,6 +30,8 @@ export async function POST(req: Request) {
       qty: numQty, cost_price: numCost, client_price: numClientPrice,
       nabta_bill, client_bill, jahed_balance,
       notes: notes || '',
+      paid_status: paid_status || 'Unpaid',
+      amount_received: Number(amount_received) || 0,
       created_at: new Date().toISOString()
     };
 
@@ -59,7 +61,15 @@ export async function PUT(req: Request) {
     const client_bill = Number((numQty * numClientPrice).toFixed(2));
     const jahed_balance = Number((client_bill - nabta_bill).toFixed(2));
 
-    const updatedData = { ...body, nabta_bill, client_bill, jahed_balance, updated_at: new Date().toISOString() };
+    const updatedData = { 
+      ...body, 
+      nabta_bill, 
+      client_bill, 
+      jahed_balance, 
+      paid_status: body.paid_status || 'Unpaid',
+      amount_received: Number(body.amount_received) || 0,
+      updated_at: new Date().toISOString() 
+    };
 
     if (!isSupabaseConfigured()) {
       const orders = LocalFS.getOrders();

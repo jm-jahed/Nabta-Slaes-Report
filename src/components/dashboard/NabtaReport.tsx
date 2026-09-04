@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { format } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 
 const DAYS_PER_PAGE = 10;
@@ -148,13 +148,31 @@ export default function NabtaReport() {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42);
-        doc.text(
-          `Summary: Nabta Yesterday: AED ${day.summary.nabta_yesterday_balance.toFixed(2)}  |  Jahed Profit: +AED ${day.summary.jahed_balance.toFixed(2)}  |  Paid: AED ${day.summary.paid.toFixed(2)} (${day.summary.paid_reason})  |  Today Balance: AED ${day.summary.nabta_today_balance.toFixed(2)}`,
-          14,
-          currentY
-        );
+        
+        const summaryLines = [
+          `Nabta ${format(subDays(parseISO(day.date), 1), 'dd-MM-yy')} Balance: ${day.summary.nabta_yesterday_balance.toFixed(2)}`,
+          `Jahed: ${(-day.summary.jahed_balance).toFixed(2)}`,
+        ];
 
-        currentY += 8;
+        if (day.no_pay_clients && day.no_pay_clients.length > 0) {
+          day.no_pay_clients.forEach(c => {
+            summaryLines.push(`${c.client_name} No Pay: ${c.amount.toFixed(2)}`);
+          });
+        }
+
+        if (day.summary.paid > 0) {
+          summaryLines.push(`Deposit: ${(-day.summary.paid).toFixed(2)} (${day.summary.paid_reason})`);
+        }
+
+        summaryLines.push(`Nabta ${format(parseISO(day.date), 'dd-MM-yy')} Balance: ${day.summary.nabta_today_balance.toFixed(2)}`);
+
+        // Draw summary lines
+        summaryLines.forEach(line => {
+          doc.text(line, 14, currentY);
+          currentY += 5;
+        });
+
+        currentY += 3;
       });
 
       const fileName = `Nabta_Sales_Report_Page_${currentPage}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
@@ -497,52 +515,119 @@ export default function NabtaReport() {
                   )}
                 </div>
 
+                {/* 2.5 NO PAY CLIENTS SECTION */}
+                {day.no_pay_clients && day.no_pay_clients.length > 0 && (
+                  <div className="border-t border-slate-800/80 bg-slate-900/50">
+                    <div className="p-3.5 sm:p-5 pb-0">
+                      <h3 className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-rose-400 print:text-black mb-3">
+                        No Pay Clients
+                      </h3>
+                      
+                      {/* Desktop Table */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              <th className="py-2.5 px-4 w-1/2">Client Name</th>
+                              <th className="py-2.5 px-4 w-1/2 text-right">No Pay Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/60 text-xs">
+                            {day.no_pay_clients.map((c, i) => (
+                              <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                                <td className="py-2.5 px-4 font-bold text-white">{c.client_name}</td>
+                                <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-400">
+                                  {formatAED(c.amount)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Cards (No Horizontal Scroll) */}
+                      <div className="md:hidden grid grid-cols-1 gap-2 pb-4">
+                        {day.no_pay_clients.map((c, i) => (
+                          <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800/90 shadow-sm gap-1.5">
+                            <span className="text-xs font-bold text-white">{c.client_name}</span>
+                            <span className="text-xs font-mono font-bold text-rose-400">{formatAED(c.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 3. DAY SUMMARY BOX (Below Each Day's Table) */}
                 <div className="p-3.5 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-t border-slate-800 space-y-2.5 print:border-black print:bg-slate-50 w-full box-border">
                   <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-400 print:text-black">
-                    Day Financial Summary:
+                    Day Financial Summary
                   </div>
 
-                  {/* Responsive Grid: 2 columns on mobile, 5 columns on desktop */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs w-full">
-                    {/* Nabta Yesterday Balance */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between">
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">Nabta Yesterday</p>
-                      <p className="text-xs sm:text-sm font-black font-mono text-white print:text-black mt-0.5 truncate">
-                        {formatAED(day.summary.nabta_yesterday_balance)}
-                      </p>
-                    </div>
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden print:border-black print:bg-white">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider print:bg-slate-200 print:text-black">
+                        <tr>
+                          <th className="py-2.5 px-4 text-left font-bold">Summary</th>
+                          <th className="py-2.5 px-4 text-right font-bold">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 print:divide-slate-300">
+                        {/* Yesterday Balance */}
+                        <tr className="hover:bg-slate-800/30 transition-colors">
+                          <td className="py-2.5 px-4 font-bold text-white print:text-black">
+                            Nabta {format(subDays(parseISO(day.date), 1), 'dd-MM-yy')} Balance
+                          </td>
+                          <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
+                            {formatAED(day.summary.nabta_yesterday_balance)}
+                          </td>
+                        </tr>
 
-                    {/* Jahed Balance */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between">
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">(−) Jahed</p>
-                      <p className="text-xs sm:text-sm font-black font-mono text-emerald-400 print:text-black mt-0.5 truncate">
-                        {formatAED(day.summary.jahed_balance)}
-                      </p>
-                    </div>
+                        {/* Jahed Balance */}
+                        <tr className="hover:bg-slate-800/30 transition-colors">
+                          <td className="py-2.5 px-4 font-bold text-white print:text-black">
+                            Jahed
+                          </td>
+                          <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
+                            {formatAED(-day.summary.jahed_balance)}
+                          </td>
+                        </tr>
 
-                    {/* Paid — merged with Reason. If paid=0, show just 0.00, no reason text */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-850 border border-slate-800 print:border-black print:bg-white flex flex-col justify-between col-span-2 sm:col-span-1">
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">(−) Paid</p>
-                      <p className="text-xs sm:text-sm font-black font-mono text-amber-400 print:text-black mt-0.5 truncate">
-                        {formatAED(day.summary.paid)}
-                      </p>
-                      {/* Only show reason badge when there IS a payment */}
-                      {day.summary.paid > 0 && day.summary.paid_reason &&
-                        !['No payments recorded'].includes(day.summary.paid_reason) && (
-                        <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 truncate">
-                          {day.summary.paid_reason}
-                        </span>
-                      )}
-                    </div>
+                        {/* Individual No Pay Clients */}
+                        {day.no_pay_clients && day.no_pay_clients.map((c, i) => (
+                          <tr key={`nopay-${i}`} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-2.5 px-4 font-bold text-rose-400">
+                              {c.client_name} No Pay
+                            </td>
+                            <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-400">
+                              {formatAED(c.amount)}
+                            </td>
+                          </tr>
+                        ))}
 
-                    {/* Nabta Today Balance */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 print:border-black print:bg-white col-span-2 sm:col-span-1 flex flex-col justify-between">
-                      <p className="text-[9px] sm:text-[10px] text-emerald-300 print:text-black uppercase font-bold">Nabta Today</p>
-                      <p className="text-xs sm:text-sm font-black font-mono text-emerald-300 print:text-black mt-0.5 truncate">
-                        {formatAED(day.summary.nabta_today_balance)}
-                      </p>
-                    </div>
+                        {/* Paid Amount (if any) */}
+                        {day.summary.paid > 0 && (
+                          <tr className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-2.5 px-4 font-bold text-white print:text-black">
+                              Deposit {day.summary.paid_reason && day.summary.paid_reason !== 'No payments recorded' ? `(${day.summary.paid_reason})` : ''}
+                            </td>
+                            <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
+                              {formatAED(-day.summary.paid)}
+                            </td>
+                          </tr>
+                        )}
+
+                        {/* Today Balance */}
+                        <tr className="bg-slate-850 print:bg-slate-100">
+                          <td className="py-3 px-4 font-black text-emerald-400 print:text-black">
+                            Nabta {format(parseISO(day.date), 'dd-MM-yy')} Balance
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono font-black text-emerald-400 print:text-black">
+                            {formatAED(day.summary.nabta_today_balance)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </section>

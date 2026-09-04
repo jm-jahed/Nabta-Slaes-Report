@@ -68,6 +68,7 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
               <th className="py-3.5 px-5 text-right">Nabta Bill</th>
               <th className="py-3.5 px-5 text-right">Client Bill</th>
               <th className="py-3.5 px-5 text-right">Jahed Balance</th>
+              <th className="py-3.5 px-5 text-center">Payment Status</th>
               <th className="py-3.5 px-5 text-center">Actions</th>
             </tr>
           </thead>
@@ -153,6 +154,22 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                       </span>
                     </td>
 
+                    {/* Payment Status */}
+                    <td className="py-4 px-5 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
+                          order.paid_status === 'Paid'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : order.paid_status === 'Partial'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
+                        }`}
+                      >
+                        {order.paid_status || 'Unpaid'}
+                        {order.paid_status === 'Partial' ? ` (${formatAED(order.amount_received || 0)})` : ''}
+                      </span>
+                    </td>
+
                     {/* Actions */}
                     <td className="py-4 px-5 text-center whitespace-nowrap">
                       {deleteConfirmId === order.id ? (
@@ -226,6 +243,7 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     {formatAED(totalJahedBalance)}
                   </span>
                 </td>
+                <td></td>
                 <td></td>
               </tr>
             </tfoot>

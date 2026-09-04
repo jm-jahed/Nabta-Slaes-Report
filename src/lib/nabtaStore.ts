@@ -28,7 +28,12 @@ export interface NabtaDayBlock {
     paid: number;
     paid_reason: string;
     nabta_today_balance: number;
+    total_no_pay_amount: number;
   };
+  no_pay_clients: Array<{
+    client_name: string;
+    amount: number;
+  }>;
 }
 
 /**
@@ -54,7 +59,7 @@ export function getSanitizedNabtaDayBlocks(
   const sortedDates = Array.from(datesSet).sort((a, b) => a.localeCompare(b));
 
   // 3. Build each day's block with calculations and carry forward
-  let runningYesterdayBalance = 5000.0; // Starting baseline
+  let runningYesterdayBalance = 0.0; // Starting baseline
   const dayBlocks: NabtaDayBlock[] = [];
 
   for (let i = 0; i < sortedDates.length; i++) {
@@ -87,14 +92,38 @@ export function getSanitizedNabtaDayBlocks(
       .filter(Boolean)
       .join('; ') || 'No payments recorded';
 
+    // No Pay Logic (calculate before today's balance so it can be included)
+    const noPayMap = new Map<string, number>();
+    dayOrders.forEach(o => {
+      let noPayAmount = 0;
+      if (o.paid_status === 'Paid') {
+        noPayAmount = 0;
+      } else if (o.paid_status === 'Partial') {
+        noPayAmount = Number(o.client_bill || 0) - Number(o.amount_received || 0);
+      } else {
+        noPayAmount = Number(o.client_bill || 0);
+      }
+      
+      if (noPayAmount > 0) {
+        noPayMap.set(o.client_name, (noPayMap.get(o.client_name) || 0) + noPayAmount);
+      }
+    });
+
+    const no_pay_clients = Array.from(noPayMap.entries()).map(([client_name, amount]) => ({
+      client_name,
+      amount: Number(amount.toFixed(2))
+    }));
+
+    const total_no_pay_amount = Number(no_pay_clients.reduce((sum, c) => sum + c.amount, 0).toFixed(2));
+
     // Yesterday balance resolution
     const nabta_yesterday_balance = summaries[dateStr]?.nabta_yesterday_balance !== undefined
       ? Number(summaries[dateStr].nabta_yesterday_balance)
       : runningYesterdayBalance;
 
-    // Nabta Today Balance = Nabta Yesterday Balance - Jahed Balance - Paid Amount
+    // Nabta Today Balance = Nabta Yesterday Balance - Jahed Balance + Total No Pay - Paid Amount
     const nabta_today_balance = Number(
-      (nabta_yesterday_balance - jahed_balance - paid).toFixed(2)
+      (nabta_yesterday_balance - jahed_balance + total_no_pay_amount - paid).toFixed(2)
     );
 
     // Carry forward to next day
@@ -115,7 +144,9 @@ export function getSanitizedNabtaDayBlocks(
         paid,
         paid_reason: paidReasons,
         nabta_today_balance,
+        total_no_pay_amount,
       },
+      no_pay_clients,
     });
   }
 

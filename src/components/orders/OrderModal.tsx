@@ -22,6 +22,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
   const [costPrice, setCostPrice] = useState<number | string>(4);
   const [clientPrice, setClientPrice] = useState<number | string>(5);
   const [notes, setNotes] = useState('');
+  const [paidStatus, setPaidStatus] = useState<'Paid' | 'Unpaid' | 'Partial'>('Unpaid');
+  const [amountReceived, setAmountReceived] = useState<number | string>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,6 +34,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
       setCostPrice(orderToEdit.cost_price);
       setClientPrice(orderToEdit.client_price);
       setNotes(orderToEdit.notes || '');
+      setPaidStatus(orderToEdit.paid_status || 'Unpaid');
+      setAmountReceived(orderToEdit.amount_received || 0);
     } else {
       setDate(selectedDate);
       setClientName('');
@@ -39,6 +43,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
       setCostPrice(4);
       setClientPrice(5);
       setNotes('');
+      setPaidStatus('Unpaid');
+      setAmountReceived(0);
     }
   }, [orderToEdit, selectedDate, isOpen]);
 
@@ -74,6 +80,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           client_bill,
           jahed_balance,
           notes: notes.trim(),
+          paid_status: paidStatus,
+          amount_received: Number(amountReceived) || 0,
         });
       } else {
         await addOrder({
@@ -83,6 +91,8 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           cost_price: numCost,
           client_price: numClientPrice,
           notes: notes.trim(),
+          paid_status: paidStatus,
+          amount_received: Number(amountReceived) || 0,
         });
         // Trigger celebratory confetti on new order
         try {
@@ -228,6 +238,41 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Paid Status */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                Paid Status
+              </label>
+              <select
+                value={paidStatus}
+                onChange={(e) => setPaidStatus(e.target.value as any)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              >
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partial">Partial</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+
+            {/* Amount Received (Visible only if Partial) */}
+            {paidStatus === 'Partial' && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Amount Received (AED)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={amountReceived}
+                  onChange={(e) => setAmountReceived(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+            )}
           </div>
 
           {/* Live Calculation Preview Card */}
