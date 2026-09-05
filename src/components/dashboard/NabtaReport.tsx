@@ -380,11 +380,6 @@ export default function NabtaReport() {
                         Total = {day.orders.length} {day.orders.length === 1 ? 'Order' : 'Orders'}
                       </p>
                     </div>
-                  </div>
-
-                  <span className="self-start sm:self-auto text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-emerald-600 font-mono print:text-black border border-emerald-500/20">
-                    Jahed: +{formatAED(day.summary.jahed_balance)}
-                  </span>
                 </div>
 
                 {/* --- A. DESKTOP VIEW: STANDARD TABLE (Hidden on Mobile) --- */}
