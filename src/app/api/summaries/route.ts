@@ -51,8 +51,8 @@ export async function GET(req: Request) {
     // No existing summary found - determine opening balance from previous day
     // Try to find the most recent summary prior to dateStr
     const prevSummaries = data.day_summaries
-      .filter(s => new Date(s.date) < new Date(dateStr))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .filter(s => s.date < dateStr)
+      .sort((a, b) => b.date.localeCompare(a.date));
     
     const openingBalance = prevSummaries.length > 0 ? prevSummaries[0].nabta_today_balance : 0;
 

@@ -73,9 +73,10 @@ export async function GET(req: Request) {
       const no_pay_clients = Array.from(noPayMap.entries()).map(([client_name, amount]) => ({ client_name, amount: Number(amount.toFixed(2)) }));
       const total_no_pay_amount = Number(no_pay_clients.reduce((sum, c) => sum + c.amount, 0).toFixed(2));
 
-      const nabta_yesterday_balance = summaries[d]?.previous_balance !== undefined 
-        ? Number(summaries[d].previous_balance)
-        : (summaries[d]?.nabta_yesterday_balance !== undefined ? Number(summaries[d].nabta_yesterday_balance) : runningBalance);
+      const isFirstDay = d === sortedDates[0];
+      const nabta_yesterday_balance = isFirstDay
+        ? (summaries[d]?.nabta_yesterday_balance !== undefined ? Number(summaries[d].nabta_yesterday_balance) : 0)
+        : runningBalance;
 
       const nabta_today_balance = summaries[d]?.next_day_balance !== undefined
         ? Number(summaries[d].next_day_balance)
