@@ -9,7 +9,10 @@ const branch = process.env.GITHUB_BRANCH || 'main';
 let octokit: Octokit | null = null;
 
 if (token && owner && repo) {
-  octokit = new Octokit({ auth: token });
+  octokit = new Octokit({ 
+    auth: token,
+    request: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) }
+  });
 }
 
 /**

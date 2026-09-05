@@ -47,12 +47,7 @@ const navItems = [
     icon: FileBarChart2,
     badge: 'PDF/Excel',
   },
-  {
-    name: 'Settings & Telegram',
-    href: '/settings',
-    icon: Settings,
-    badge: 'Bot',
-  },
+
   {
     name: 'Client Management',
     href: '/clients',
@@ -160,7 +155,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* User / Admin Card */}
-        <div className="p-4 border-t border-slate-200/60 dark:border-slate-800/60">
+        <div className="p-4 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col gap-2">
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 dark:from-slate-600 dark:to-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-inner flex-shrink-0">
@@ -179,6 +174,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
             </div>
           </div>
+          <button
+            onClick={useAuth().logout}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500 text-sm font-bold hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
       </aside>
     </>
