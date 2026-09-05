@@ -188,7 +188,7 @@ export default function NabtaReport() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white px-4">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-900 px-4">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-xs sm:text-sm font-bold">Loading report data...</p>
@@ -199,34 +199,34 @@ export default function NabtaReport() {
 
   if (!isValid) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-2xl">
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-4 shadow-2xl">
           <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6" />
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-rose-400">Error Loading Report</h2>
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <h2 className="text-lg sm:text-xl font-black text-rose-600">Error Loading Report</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
             {errorMessage}
           </p>
-          <button onClick={logout} className="px-4 py-2 mt-4 rounded-xl bg-slate-800 text-slate-300 text-sm font-bold">Logout</button>
+          <button onClick={logout} className="px-4 py-2 mt-4 rounded-xl bg-slate-100 text-slate-600 text-sm font-bold">Logout</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500 selection:text-white print:bg-white print:text-black overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500 selection:text-slate-900 print:bg-white print:text-black overflow-x-hidden w-full max-w-full">
       {/* Top Read-Only Bar */}
-      <div className="bg-slate-900/90 border-b border-slate-800 py-2.5 px-3 sm:px-6 print:hidden flex flex-wrap items-center justify-between gap-2 text-xs w-full">
-        <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] sm:text-xs">
+      <div className="bg-white/90 border-b border-slate-200 py-2.5 px-3 sm:px-6 print:hidden flex flex-wrap items-center justify-between gap-2 text-xs w-full">
+        <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-[11px] sm:text-xs">
           <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="truncate">Official Read-Only Financial Ledger (Logged in as {user?.name})</span>
         </div>
-        <div className="flex items-center gap-3 text-slate-400 font-mono text-[10px] sm:text-[11px]">
+        <div className="flex items-center gap-3 text-slate-500 font-mono text-[10px] sm:text-[11px]">
           <button
             onClick={loadReportData}
             title="Refresh live data"
-            className="flex items-center gap-1 hover:text-white transition-colors"
+            className="flex items-center gap-1 hover:text-slate-900 transition-colors"
           >
             <RefreshCw className="w-3 h-3" />
             <span>Sync</span>
@@ -234,7 +234,7 @@ export default function NabtaReport() {
           <span>•</span>
           <button
             onClick={logout}
-            className="flex items-center gap-1 text-rose-400 hover:text-rose-300 transition-colors"
+            className="flex items-center gap-1 text-rose-600 hover:text-rose-300 transition-colors"
           >
             <LogOut className="w-3 h-3" />
             <span>Logout</span>
@@ -245,20 +245,20 @@ export default function NabtaReport() {
       {/* Main Container */}
       <div className="max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 print:p-0 print:max-w-full w-full box-border">
         {/* 1. REPORT HEADER */}
-        <header className="p-4 sm:p-7 rounded-3xl bg-slate-900/95 border border-slate-800 shadow-2xl space-y-4 print:border-none print:shadow-none print:p-0 w-full box-border">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 print:border-black pb-4 sm:pb-5">
+        <header className="p-4 sm:p-7 rounded-3xl bg-white/95 border border-slate-200 shadow-2xl space-y-4 print:border-none print:shadow-none print:p-0 w-full box-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 print:border-black pb-4 sm:pb-5">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/20 print:hidden flex-shrink-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-slate-900 flex items-center justify-center font-bold shadow-lg shadow-emerald-500/20 print:hidden flex-shrink-0">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white print:text-black leading-tight">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 print:text-black leading-tight">
                     NABTA SALES REPORT
                   </h1>
                 </div>
               </div>
-              <div className="flex items-start sm:items-center gap-1.5 text-xs sm:text-sm text-emerald-400 print:text-black font-semibold">
+              <div className="flex items-start sm:items-center gap-1.5 text-xs sm:text-sm text-emerald-600 print:text-black font-semibold">
                 <Calendar className="w-3.5 h-3.5 mt-0.5 sm:mt-0 print:hidden flex-shrink-0" />
                 <span className="leading-snug">Report Period: <b>{reportPeriodLabel}</b></span>
               </div>
@@ -268,15 +268,15 @@ export default function NabtaReport() {
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 print:hidden w-full sm:w-auto">
               <button
                 onClick={handlePrint}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-colors shadow-sm"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-700 transition-colors shadow-sm"
               >
-                <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                <Printer className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Print</span>
               </button>
 
               <button
                 onClick={handleDownloadPDF}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 transition-all"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-900 text-xs font-bold shadow-lg shadow-emerald-600/25 transition-all"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Download PDF</span>
@@ -286,9 +286,9 @@ export default function NabtaReport() {
 
           {/* Page Info & Pagination Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 print:hidden">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <span>Showing:</span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-white font-bold font-mono text-[11px]">
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-900 font-bold font-mono text-[11px]">
                 Days {pageStartIndex + 1}–{pageEndIndex} of {totalDays}
               </span>
             </div>
@@ -301,13 +301,13 @@ export default function NabtaReport() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 disabled={currentPage === 1}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-xs font-bold text-slate-700 border border-slate-700 transition-all"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span>Previous</span>
               </button>
 
-              <span className="px-2.5 py-1 text-xs font-bold text-emerald-400 font-mono text-center">
+              <span className="px-2.5 py-1 text-xs font-bold text-emerald-600 font-mono text-center">
                 {currentPage} / {totalPages}
               </span>
 
@@ -317,7 +317,7 @@ export default function NabtaReport() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 disabled={currentPage === totalPages}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-xs font-bold text-slate-700 border border-slate-700 transition-all"
               >
                 <span>Next</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -331,22 +331,22 @@ export default function NabtaReport() {
           <section className="p-4 sm:p-7 rounded-3xl bg-rose-500/5 border border-rose-500/20 shadow-sm space-y-4 print:border-black print:bg-transparent">
             <div className="flex items-center gap-2 mb-2">
               <ShieldAlert className="w-5 h-5 text-rose-500" />
-              <h2 className="text-base sm:text-lg font-black text-rose-400 print:text-black">
+              <h2 className="text-base sm:text-lg font-black text-rose-600 print:text-black">
                 Current Total Outstanding No Pay
               </h2>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {globalNoPayClients.map((c, i) => (
-                <div key={`global-nopay-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 shadow-sm print:border-black print:bg-transparent">
-                  <span className="text-sm font-bold text-white print:text-black">{c.client_name}</span>
-                  <span className="text-sm font-mono font-bold text-rose-400 print:text-black">{formatAED(c.amount)}</span>
+                <div key={`global-nopay-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 shadow-sm print:border-black print:bg-transparent">
+                  <span className="text-sm font-bold text-slate-900 print:text-black">{c.client_name}</span>
+                  <span className="text-sm font-mono font-bold text-rose-600 print:text-black">{formatAED(c.amount)}</span>
                 </div>
               ))}
             </div>
 
             <div className="pt-3 mt-3 border-t border-rose-500/20 flex items-center justify-between print:border-black">
-              <span className="text-sm font-bold text-slate-300 print:text-black">Total Outstanding:</span>
+              <span className="text-sm font-bold text-slate-600 print:text-black">Total Outstanding:</span>
               <span className="text-lg font-black font-mono text-rose-500 print:text-black">{formatAED(totalGlobalNoPay)}</span>
             </div>
           </section>
@@ -364,25 +364,25 @@ export default function NabtaReport() {
             return (
               <section
                 key={day.date}
-                className="rounded-3xl bg-slate-900/90 border border-slate-800 overflow-hidden shadow-xl print:border-black print:bg-transparent print:shadow-none print:break-inside-avoid w-full box-border"
+                className="rounded-3xl bg-white/90 border border-slate-200 overflow-hidden shadow-xl print:border-black print:bg-transparent print:shadow-none print:break-inside-avoid w-full box-border"
               >
                 {/* Day Header */}
-                <div className="p-3.5 sm:p-5 border-b border-slate-800 bg-slate-850/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 print:border-black print:bg-slate-100">
+                <div className="p-3.5 sm:p-5 border-b border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 print:border-black print:bg-slate-100">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold font-mono print:text-black flex-shrink-0">
+                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/20 text-emerald-600 flex items-center justify-center text-xs font-bold font-mono print:text-black flex-shrink-0">
                       #{dayNumber}
                     </span>
                     <div>
-                      <h2 className="text-sm sm:text-base font-bold text-white print:text-black">
+                      <h2 className="text-sm sm:text-base font-bold text-slate-900 print:text-black">
                         {day.formattedDate}
                       </h2>
-                      <p className="text-[10px] sm:text-[11px] text-slate-400 print:text-slate-600 font-mono">
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 print:text-slate-600 font-mono">
                         Total = {day.orders.length} {day.orders.length === 1 ? 'Order' : 'Orders'}
                       </p>
                     </div>
                   </div>
 
-                  <span className="self-start sm:self-auto text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-400 font-mono print:text-black border border-emerald-500/20">
+                  <span className="self-start sm:self-auto text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-emerald-600 font-mono print:text-black border border-emerald-500/20">
                     Jahed: +{formatAED(day.summary.jahed_balance)}
                   </span>
                 </div>
@@ -391,7 +391,7 @@ export default function NabtaReport() {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 print:bg-slate-200 print:text-black print:border-black">
+                      <tr className="border-b border-slate-200 bg-slate-50/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 print:bg-slate-200 print:text-black print:border-black">
                         <th className="py-3 px-4">Date</th>
                         <th className="py-3 px-4">Client Name</th>
                         <th className="py-3 px-4 text-right">Qty</th>
@@ -401,7 +401,7 @@ export default function NabtaReport() {
                         <th className="py-3 px-4 text-right">Jahed Balance</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-xs sm:text-sm print:divide-slate-300">
+                    <tbody className="divide-y divide-slate-200 text-xs sm:text-sm print:divide-slate-300">
                       {day.orders.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="py-6 text-center text-xs text-slate-500 print:text-black">
@@ -410,11 +410,11 @@ export default function NabtaReport() {
                         </tr>
                       ) : (
                         day.orders.map((o) => (
-                          <tr key={o.id} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-3 px-4 font-mono text-xs text-slate-400 print:text-black whitespace-nowrap">
+                          <tr key={o.id} className="hover:bg-slate-100/30 transition-colors">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-500 print:text-black whitespace-nowrap">
                               {day.date}
                             </td>
-                            <td className="py-3 px-4 font-bold text-white print:text-black">
+                            <td className="py-3 px-4 font-bold text-slate-900 print:text-black">
                               {o.client_name}
                               {o.notes && (
                                 <span className="block text-[10px] text-slate-500 font-normal">
@@ -422,19 +422,19 @@ export default function NabtaReport() {
                                 </span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-200 print:text-black">
+                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-700 print:text-black">
                               {formatNumber(o.qty)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono text-slate-400 print:text-black text-xs">
+                            <td className="py-3 px-4 text-right font-mono text-slate-500 print:text-black text-xs">
                               {formatAED(o.cost_price)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-100 print:text-black">
+                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 print:text-black">
                               {formatAED(o.nabta_bill)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono font-bold text-amber-400 print:text-black">
+                            <td className="py-3 px-4 text-right font-mono font-bold text-amber-600 print:text-black">
                               {formatAED(o.client_bill)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono font-extrabold text-emerald-400 print:text-black">
+                            <td className="py-3 px-4 text-right font-mono font-extrabold text-emerald-600 print:text-black">
                               +{formatAED(o.jahed_balance)}
                             </td>
                           </tr>
@@ -445,21 +445,21 @@ export default function NabtaReport() {
                     {/* Day Orders Desktop Subtotal */}
                     {day.orders.length > 0 && (
                       <tfoot>
-                        <tr className="border-t border-slate-800 bg-slate-950/80 font-bold text-xs uppercase tracking-wider print:bg-slate-100 print:border-black">
-                          <td colSpan={2} className="py-2.5 px-4 text-slate-300 print:text-black">
+                        <tr className="border-t border-slate-200 bg-slate-50/80 font-bold text-xs uppercase tracking-wider print:bg-slate-100 print:border-black">
+                          <td colSpan={2} className="py-2.5 px-4 text-slate-600 print:text-black">
                             Day #{dayNumber} Total
                           </td>
-                          <td className="py-2.5 px-4 text-right font-mono text-slate-200 print:text-black">
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-700 print:text-black">
                             {formatNumber(totalQty)}
                           </td>
                           <td className="py-2.5 px-4 text-right text-slate-500">-</td>
-                          <td className="py-2.5 px-4 text-right font-mono text-white print:text-black">
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-900 print:text-black">
                             {formatAED(totalNabtaBill)}
                           </td>
-                          <td className="py-2.5 px-4 text-right font-mono text-amber-400 print:text-black">
+                          <td className="py-2.5 px-4 text-right font-mono text-amber-600 print:text-black">
                             {formatAED(totalClientBill)}
                           </td>
-                          <td className="py-2.5 px-4 text-right font-mono text-emerald-400 print:text-black">
+                          <td className="py-2.5 px-4 text-right font-mono text-emerald-600 print:text-black">
                             +{formatAED(totalJahedBalance)}
                           </td>
                         </tr>
@@ -476,12 +476,12 @@ export default function NabtaReport() {
                     day.orders.map((o, ordIdx) => (
                       <div
                         key={o.id}
-                        className="p-3 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-2.5 shadow-sm"
+                        className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5 shadow-sm"
                       >
                         {/* Card Header: Client Name & Date */}
-                        <div className="flex items-start justify-between gap-2 border-b border-slate-850 pb-2">
+                        <div className="flex items-start justify-between gap-2 border-b border-slate-200 pb-2">
                           <div>
-                            <h3 className="text-xs font-bold text-white leading-snug">
+                            <h3 className="text-xs font-bold text-slate-900 leading-snug">
                               {o.client_name}
                             </h3>
                             {o.notes && (
@@ -490,38 +490,38 @@ export default function NabtaReport() {
                               </p>
                             )}
                           </div>
-                          <span className="text-[10px] font-mono text-slate-400 flex-shrink-0 bg-slate-900 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-mono text-slate-500 flex-shrink-0 bg-white px-1.5 py-0.5 rounded">
                             {day.date}
                           </span>
                         </div>
 
                         {/* Card Metrics Grid */}
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
-                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
-                            <span className="text-slate-400 font-medium">Qty:</span>
-                            <span className="font-bold font-mono text-slate-200">{formatNumber(o.qty)}</span>
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-white/60 border border-slate-200">
+                            <span className="text-slate-500 font-medium">Qty:</span>
+                            <span className="font-bold font-mono text-slate-700">{formatNumber(o.qty)}</span>
                           </div>
 
-                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
-                            <span className="text-slate-400 font-medium">Price:</span>
-                            <span className="font-bold font-mono text-slate-300">{formatAED(o.cost_price)}</span>
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-white/60 border border-slate-200">
+                            <span className="text-slate-500 font-medium">Price:</span>
+                            <span className="font-bold font-mono text-slate-600">{formatAED(o.cost_price)}</span>
                           </div>
 
-                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
-                            <span className="text-slate-400 font-medium">Nabta Bill:</span>
-                            <span className="font-bold font-mono text-slate-100">{formatAED(o.nabta_bill)}</span>
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-white/60 border border-slate-200">
+                            <span className="text-slate-500 font-medium">Nabta Bill:</span>
+                            <span className="font-bold font-mono text-slate-900">{formatAED(o.nabta_bill)}</span>
                           </div>
 
-                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-850">
-                            <span className="text-slate-400 font-medium">Client Bill:</span>
-                            <span className="font-bold font-mono text-amber-400">{formatAED(o.client_bill)}</span>
+                          <div className="flex items-center justify-between p-1.5 rounded-lg bg-white/60 border border-slate-200">
+                            <span className="text-slate-500 font-medium">Client Bill:</span>
+                            <span className="font-bold font-mono text-amber-600">{formatAED(o.client_bill)}</span>
                           </div>
                         </div>
 
                         {/* Profit Row */}
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-850 text-xs">
-                          <span className="text-slate-400 font-semibold">Jahed Balance:</span>
-                          <span className="font-extrabold font-mono text-emerald-400">
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs">
+                          <span className="text-slate-500 font-semibold">Jahed Balance:</span>
+                          <span className="font-extrabold font-mono text-emerald-600">
                             +{formatAED(o.jahed_balance)}
                           </span>
                         </div>
@@ -531,15 +531,15 @@ export default function NabtaReport() {
 
                   {/* Mobile Day Subtotal Box */}
                   {day.orders.length > 0 && (
-                    <div className="p-2.5 rounded-xl bg-slate-850 border border-slate-700/60 text-[11px] space-y-1">
-                      <div className="flex items-center justify-between font-bold text-slate-300">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-700/60 text-[11px] space-y-1">
+                      <div className="flex items-center justify-between font-bold text-slate-600">
                         <span>Day #{dayNumber} Subtotal ({day.orders.length} Orders)</span>
                         <span className="font-mono">{formatNumber(totalQty)} Qty</span>
                       </div>
-                      <div className="flex items-center justify-between text-slate-400">
-                        <span>Nabta: <b className="text-white font-mono">{formatAED(totalNabtaBill)}</b></span>
-                        <span>Client: <b className="text-amber-400 font-mono">{formatAED(totalClientBill)}</b></span>
-                        <span>Jahed: <b className="text-emerald-400 font-mono">+{formatAED(totalJahedBalance)}</b></span>
+                      <div className="flex items-center justify-between text-slate-500">
+                        <span>Nabta: <b className="text-slate-900 font-mono">{formatAED(totalNabtaBill)}</b></span>
+                        <span>Client: <b className="text-amber-600 font-mono">{formatAED(totalClientBill)}</b></span>
+                        <span>Jahed: <b className="text-emerald-600 font-mono">+{formatAED(totalJahedBalance)}</b></span>
                       </div>
                     </div>
                   )}
@@ -547,9 +547,9 @@ export default function NabtaReport() {
 
                 {/* 2.5 NO PAY CLIENTS SECTION */}
                 {day.no_pay_clients && day.no_pay_clients.length > 0 && (
-                  <div className="border-t border-slate-800/80 bg-slate-900/50">
+                  <div className="border-t border-slate-200/80 bg-slate-100/50">
                     <div className="p-3.5 sm:p-5 pb-0">
-                      <h3 className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-rose-400 print:text-black mb-3">
+                      <h3 className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-rose-600 print:text-black mb-3">
                         No Pay Clients
                       </h3>
                       
@@ -557,16 +557,16 @@ export default function NabtaReport() {
                       <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                            <tr className="border-b border-slate-200 bg-slate-50/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                               <th className="py-2.5 px-4 w-1/2">Client Name</th>
                               <th className="py-2.5 px-4 w-1/2 text-right">No Pay Amount</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-800/60 text-xs">
+                          <tbody className="divide-y divide-slate-200 text-xs">
                             {day.no_pay_clients.map((c, i) => (
-                              <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                                <td className="py-2.5 px-4 font-bold text-white">{c.client_name}</td>
-                                <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-400">
+                              <tr key={i} className="hover:bg-slate-100/30 transition-colors">
+                                <td className="py-2.5 px-4 font-bold text-slate-900">{c.client_name}</td>
+                                <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-600">
                                   {formatAED(c.amount)}
                                 </td>
                               </tr>
@@ -578,9 +578,9 @@ export default function NabtaReport() {
                       {/* Mobile Cards (No Horizontal Scroll) */}
                       <div className="md:hidden grid grid-cols-1 gap-2 pb-4">
                         {day.no_pay_clients.map((c, i) => (
-                          <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800/90 shadow-sm gap-1.5">
-                            <span className="text-xs font-bold text-white">{c.client_name}</span>
-                            <span className="text-xs font-mono font-bold text-rose-400">{formatAED(c.amount)}</span>
+                          <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/90 shadow-sm gap-1.5">
+                            <span className="text-xs font-bold text-slate-900">{c.client_name}</span>
+                            <span className="text-xs font-mono font-bold text-rose-600">{formatAED(c.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -589,47 +589,47 @@ export default function NabtaReport() {
                 )}
 
                 {/* 3. DAY SUMMARY BOX (Below Each Day's Table) */}
-                <div className="p-3.5 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-t border-slate-800 space-y-2.5 print:border-black print:bg-slate-50 w-full box-border">
-                  <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-400 print:text-black">
+                <div className="p-3.5 sm:p-5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-t border-slate-200 space-y-2.5 print:border-black print:bg-slate-50 w-full box-border">
+                  <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-500 print:text-black">
                     Day Financial Summary
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden print:border-black print:bg-white">
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden print:border-black print:bg-white">
                     <table className="w-full text-sm">
-                      <thead className="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider print:bg-slate-200 print:text-black">
+                      <thead className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider print:bg-slate-200 print:text-black">
                         <tr>
                           <th className="py-2.5 px-4 text-left font-bold">Summary</th>
                           <th className="py-2.5 px-4 text-right font-bold">Amount</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800 print:divide-slate-300">
+                      <tbody className="divide-y divide-slate-200 print:divide-slate-300">
                         {/* Yesterday Balance */}
-                        <tr className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-2.5 px-4 font-bold text-white print:text-black">
+                        <tr className="hover:bg-slate-100/30 transition-colors">
+                          <td className="py-2.5 px-4 font-bold text-slate-900 print:text-black">
                             Nabta {format(subDays(parseISO(day.date), 1), 'dd-MM-yy')} Balance
                           </td>
-                          <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
+                          <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 print:text-black">
                             {formatAED(day.summary.nabta_yesterday_balance)}
                           </td>
                         </tr>
 
                         {/* Jahed Balance */}
-                        <tr className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-2.5 px-4 font-bold text-white print:text-black">
+                        <tr className="hover:bg-slate-100/30 transition-colors">
+                          <td className="py-2.5 px-4 font-bold text-slate-900 print:text-black">
                             Jahed
                           </td>
-                          <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
+                          <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 print:text-black">
                             {formatAED(-day.summary.jahed_balance)}
                           </td>
                         </tr>
 
                         {/* Individual No Pay Clients */}
                         {day.no_pay_clients && day.no_pay_clients.map((c, i) => (
-                          <tr key={`nopay-${i}`} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-2.5 px-4 font-bold text-rose-400">
+                          <tr key={`nopay-${i}`} className="hover:bg-slate-100/30 transition-colors">
+                            <td className="py-2.5 px-4 font-bold text-rose-600">
                               {c.client_name} No Pay
                             </td>
-                            <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-400">
+                            <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-600">
                               {formatAED(c.amount)}
                             </td>
                           </tr>
@@ -637,22 +637,22 @@ export default function NabtaReport() {
 
                         {/* Paid Amount (if any) */}
                         {day.summary.paid !== 0 && (
-                          <tr className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-2.5 px-4 font-bold text-white print:text-black">
+                          <tr className="hover:bg-slate-100/30 transition-colors">
+                            <td className="py-2.5 px-4 font-bold text-slate-900 print:text-black">
                               Adjustment {day.summary.paid_reason && day.summary.paid_reason !== 'No payments recorded' ? `(${day.summary.paid_reason})` : ''}
                             </td>
-                            <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
+                            <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 print:text-black">
                               {formatAED(day.summary.paid > 0 ? day.summary.paid : day.summary.paid)}
                             </td>
                           </tr>
                         )}
 
                         {/* Today Balance */}
-                        <tr className="bg-slate-850 print:bg-slate-100">
-                          <td className="py-3 px-4 font-black text-emerald-400 print:text-black">
+                        <tr className="bg-slate-50 print:bg-slate-100">
+                          <td className="py-3 px-4 font-black text-emerald-600 print:text-black">
                             Nabta {format(parseISO(day.date), 'dd-MM-yy')} Balance
                           </td>
-                          <td className="py-3 px-4 text-right font-mono font-black text-emerald-400 print:text-black">
+                          <td className="py-3 px-4 text-right font-mono font-black text-emerald-600 print:text-black">
                             {formatAED(day.summary.nabta_today_balance)}
                           </td>
                         </tr>
@@ -666,8 +666,8 @@ export default function NabtaReport() {
         </div>
 
         {/* Footer Pagination Navigation */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6 rounded-3xl bg-slate-900 border border-slate-800 print:hidden w-full box-border">
-          <p className="text-[11px] sm:text-xs text-slate-400 font-mono text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6 rounded-3xl bg-white border border-slate-200 print:hidden w-full box-border">
+          <p className="text-[11px] sm:text-xs text-slate-500 font-mono text-center sm:text-left">
             Page {currentPage} of {totalPages} ({totalDays} Days)
           </p>
 
@@ -678,13 +678,13 @@ export default function NabtaReport() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={currentPage === 1}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold text-white border border-slate-700 transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-xs font-bold text-slate-900 border border-slate-700 transition-all"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Previous</span>
             </button>
 
-            <span className="px-3 py-1 text-xs font-bold text-emerald-400 font-mono">
+            <span className="px-3 py-1 text-xs font-bold text-emerald-600 font-mono">
               {currentPage} / {totalPages}
             </span>
 
@@ -694,7 +694,7 @@ export default function NabtaReport() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={currentPage === totalPages}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-xs font-bold text-slate-900 shadow-md shadow-emerald-600/20 transition-all"
             >
               <span>Next</span>
               <ChevronRight className="w-3.5 h-3.5" />
