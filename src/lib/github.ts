@@ -11,7 +11,7 @@ let octokit: Octokit | null = null;
 if (token && owner && repo) {
   octokit = new Octokit({ 
     auth: token,
-    request: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) }
+    request: { fetch: (url: any, opts: any) => fetch(url, { ...opts, cache: 'no-store' }) }
   });
 }
 
