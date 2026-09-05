@@ -380,6 +380,7 @@ export default function NabtaReport() {
                         Total = {day.orders.length} {day.orders.length === 1 ? 'Order' : 'Orders'}
                       </p>
                     </div>
+                  </div>
                 </div>
 
                 {/* --- A. DESKTOP VIEW: STANDARD TABLE (Hidden on Mobile) --- */}
