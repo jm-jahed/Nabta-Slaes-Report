@@ -78,9 +78,9 @@ export async function GET(req: Request) {
         ? (summaries[d]?.nabta_yesterday_balance !== undefined ? Number(summaries[d].nabta_yesterday_balance) : 0)
         : runningBalance;
 
-      const nabta_today_balance = summaries[d]?.next_day_balance !== undefined
-        ? Number(summaries[d].next_day_balance)
-        : Number((nabta_yesterday_balance - jahed_balance + paid).toFixed(2));
+      const nabta_today_balance = summaries[d]?.nabta_today_balance !== undefined
+        ? Number(summaries[d].nabta_today_balance)
+        : Number((nabta_yesterday_balance - jahed_balance - total_no_pay_amount + paid).toFixed(2));
 
       runningBalance = nabta_today_balance;
 

@@ -20,22 +20,22 @@ export async function GET(req: Request) {
       const dayPayments = data.payments.filter(p => p.date === dateStr);
 
       const jahed_balance = Number(dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2));
+      const client_no_pay = Number(dayOrders.reduce((s, o) => s + Math.max(0, (o.client_bill || 0) - (o.amount_received || 0)), 0).toFixed(2));
       const adjustments = Number(dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2));
       let nabta_yesterday_balance = Number(existingSummary.nabta_yesterday_balance || 0);
 
-      // Auto-heal if 0 or undefined
-      if (nabta_yesterday_balance === 0) {
-        const prevSummaries = data.day_summaries
-          .filter(s => s.date < dateStr)
-          .sort((a, b) => b.date.localeCompare(a.date));
-        if (prevSummaries.length > 0) {
-          nabta_yesterday_balance = Number(prevSummaries[0].nabta_today_balance || 0);
-          existingSummary.nabta_yesterday_balance = nabta_yesterday_balance;
-        }
+      const prevSummaries = data.day_summaries
+        .filter(s => s.date < dateStr)
+        .sort((a, b) => b.date.localeCompare(a.date));
+        
+      if (prevSummaries.length > 0) {
+        // ALWAYS auto-heal/sync with the latest previous day balance to ensure it carries forward dynamically if previous days change
+        nabta_yesterday_balance = Number(prevSummaries[0].nabta_today_balance || 0);
+        existingSummary.nabta_yesterday_balance = nabta_yesterday_balance;
       }
 
-      // New Formula: Prev Balance - Jahed + Adjustments
-      const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance + adjustments).toFixed(2));
+      // New Formula: Prev Balance - Jahed Profit - Client No Pay + Adjustments
+      const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance - client_no_pay + adjustments).toFixed(2));
       
       const updatedSummary = {
         ...existingSummary,
@@ -71,10 +71,11 @@ export async function GET(req: Request) {
     const dayPayments = data.payments.filter(p => p.date === dateStr);
 
     const jahed_balance = Number(dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2));
+    const client_no_pay = Number(dayOrders.reduce((s, o) => s + Math.max(0, (o.client_bill || 0) - (o.amount_received || 0)), 0).toFixed(2));
     const adjustments = Number(dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2));
 
-    // New Formula: Prev Balance - Jahed + Adjustments
-    const nabta_today_balance = Number((openingBalance - jahed_balance + adjustments).toFixed(2));
+    // New Formula: Prev Balance - Jahed Profit - Client No Pay + Adjustments
+    const nabta_today_balance = Number((openingBalance - jahed_balance - client_no_pay + adjustments).toFixed(2));
 
     const newSummary = {
       date: dateStr,
@@ -111,10 +112,11 @@ export async function POST(req: Request) {
       const dayPayments = data.payments.filter(p => p.date === date);
 
       const jahed_balance = Number(dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2));
+      const client_no_pay = Number(dayOrders.reduce((s, o) => s + Math.max(0, (o.client_bill || 0) - (o.amount_received || 0)), 0).toFixed(2));
       const adjustments = Number(dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2));
 
-      // New Formula: Prev Balance - Jahed + Adjustments
-      summary.nabta_today_balance = Number((summary.nabta_yesterday_balance - jahed_balance + adjustments).toFixed(2));
+      // New Formula: Prev Balance - Jahed Profit - Client No Pay + Adjustments
+      summary.nabta_today_balance = Number((summary.nabta_yesterday_balance - jahed_balance - client_no_pay + adjustments).toFixed(2));
       summary.updated_at = new Date().toISOString();
 
       await saveMonthlyData(data, date);

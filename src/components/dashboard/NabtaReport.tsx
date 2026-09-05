@@ -160,7 +160,7 @@ export default function NabtaReport() {
 
         if (day.no_pay_clients && day.no_pay_clients.length > 0) {
           day.no_pay_clients.forEach(c => {
-            summaryLines.push(`${c.client_name} No Pay: ${c.amount.toFixed(2)}`);
+            summaryLines.push(`${c.client_name} No Pay: -${c.amount.toFixed(2)}`);
           });
         }
 
@@ -562,7 +562,7 @@ export default function NabtaReport() {
                               <tr key={i} className="hover:bg-slate-100/30 transition-colors">
                                 <td className="py-2.5 px-4 font-bold text-slate-900">{c.client_name}</td>
                                 <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-600">
-                                  {formatAED(c.amount)}
+                                  -{formatAED(c.amount)}
                                 </td>
                               </tr>
                             ))}
@@ -575,7 +575,7 @@ export default function NabtaReport() {
                         {day.no_pay_clients.map((c, i) => (
                           <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/90 shadow-sm gap-1.5">
                             <span className="text-xs font-bold text-slate-900">{c.client_name}</span>
-                            <span className="text-xs font-mono font-bold text-rose-600">{formatAED(c.amount)}</span>
+                            <span className="text-xs font-mono font-bold text-rose-600">-{formatAED(c.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -625,7 +625,7 @@ export default function NabtaReport() {
                               {c.client_name} No Pay
                             </td>
                             <td className="py-2.5 px-4 text-right font-mono font-bold text-rose-600">
-                              {formatAED(c.amount)}
+                              -{formatAED(c.amount)}
                             </td>
                           </tr>
                         ))}

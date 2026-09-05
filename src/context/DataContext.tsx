@@ -33,10 +33,6 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-/**
- * Compute day summary locally from in-memory data.
- * Returns null so the caller can fall back to an API fetch if no opening balance is known.
- */
 function computeLocalSummary(
   dateStr: string,
   allOrders: Order[],
@@ -50,18 +46,15 @@ function computeLocalSummary(
     dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2)
   );
   
-  // Expenses/Vouchers
+  const client_no_pay = Number(
+    dayOrders.reduce((s, o) => s + Math.max(0, (o.client_bill || 0) - (o.amount_received || 0)), 0).toFixed(2)
+  );
+  
   const paid = Number(
     dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2)
   );
-  
-  // Total Client Payments
-  const orders_paid = Number(
-    dayOrders.reduce((s, o) => s + Number(o.amount_received || 0), 0).toFixed(2)
-  );
 
-  // Nabta Balance = Yesterday - Jahed + Adjustments
-  const nabta_today_balance = Number((openingBalance - jahed_balance + paid).toFixed(2));
+  const nabta_today_balance = Number((openingBalance - jahed_balance - client_no_pay + paid).toFixed(2));
 
   return {
     date: dateStr,
@@ -71,6 +64,11 @@ function computeLocalSummary(
     nabta_today_balance,
     updated_at: new Date().toISOString(),
   };
+}
+
+// Helper to get YYYY-MM from a date string (YYYY-MM-DD)
+function getMonthKey(dateStr: string) {
+  return dateStr.substring(0, 7);
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
@@ -83,10 +81,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Cache: date -> opening balance (nabta_yesterday_balance) fetched from server
-  const openingBalanceCache = useRef<Map<string, number>>(new Map());
-  // Track whether initial data load has completed
-  const initialLoadDone = useRef(false);
+  // Cache of loaded month keys (YYYY-MM)
+  const loadedMonths = useRef<Set<string>>(new Set());
+  
+  // Cache of day summaries fetched from the server
+  const summariesCache = useRef<Map<string, DaySummary>>(new Map());
+
+  // Track initial mount to restore localStorage safely
+  const isMounted = useRef(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -100,43 +102,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // ─── Single full data load (runs once on mount) ───────────────────────────
-  const loadData = useCallback(async (targetDate?: string) => {
-    setIsLoading(true);
-    try {
-      const date = targetDate || selectedDate;
-      const [fetchedOrders, fetchedPayments] = await Promise.all([
-        DataStore.getOrders(),
-        DataStore.getPayments(),
-      ]);
-      setOrders(fetchedOrders);
-      setPayments(fetchedPayments);
-
-      // Fetch the authoritative summary for the current date (includes opening balance)
-      const summary = await DataStore.getDaySummaryForDate(date, fetchedOrders, fetchedPayments);
-      setDaySummary(summary);
-
-      // Cache the opening balance for this date
-      openingBalanceCache.current.set(date, summary.nabta_yesterday_balance);
-      initialLoadDone.current = true;
-    } catch (err) {
-      console.error('Failed to load data:', err);
-      showToast('Error loading records', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showToast]); // NOTE: selectedDate intentionally NOT in deps to avoid re-fetch on date change
-
-  useEffect(() => {
-    loadData(selectedDate);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only on mount
-
-  // ─── On date change: show instantly from cache, then refresh opening balance ─
   const setSelectedDate = useCallback((date: string) => {
     setSelectedDateState(date);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedDate', date);
+    }
   }, []);
+
+  // Restore date from localStorage on mount
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      const savedDate = localStorage.getItem('selectedDate');
+      if (savedDate && savedDate !== selectedDate) {
+        setSelectedDateState(savedDate);
+      }
+    }
+  }, [selectedDate]);
 
   const ordersRef = useRef<Order[]>([]);
   const paymentsRef = useRef<Payment[]>([]);
@@ -144,45 +126,109 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { ordersRef.current = orders; }, [orders]);
   useEffect(() => { paymentsRef.current = payments; }, [payments]);
 
-  // ─── Rewrite the date-switch effect using refs ────────────────────────────
-  const prevDateRef = useRef<string>('');
+  // Main data loader function
+  const loadMonthData = useCallback(async (targetDate: string, forceRefresh = false) => {
+    const monthKey = getMonthKey(targetDate);
+    
+    // If we already have this month loaded in memory, and we aren't forcing a refresh, skip network
+    if (loadedMonths.current.has(monthKey) && !forceRefresh) {
+      return; 
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = await DataStore.getFullMonthData(targetDate);
+      if (payload) {
+        // Only append/update, do not wipe out other months from memory!
+        setOrders(prev => {
+          const others = prev.filter(o => getMonthKey(o.date) !== monthKey);
+          return [...others, ...payload.orders];
+        });
+        setPayments(prev => {
+          const others = prev.filter(p => getMonthKey(p.date) !== monthKey);
+          return [...others, ...payload.payments];
+        });
+
+        // Store summaries in cache
+        payload.day_summaries.forEach(s => {
+          summariesCache.current.set(s.date, s);
+        });
+
+        loadedMonths.current.add(monthKey);
+      }
+    } catch (err) {
+      console.error('Failed to load month data:', err);
+      showToast('Error loading records for this month', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showToast]);
+
+  // When selectedDate changes, ensure we have the month data, and compute summary
   useEffect(() => {
-    const date = selectedDate;
-    if (!initialLoadDone.current || date === prevDateRef.current) return;
-    prevDateRef.current = date;
+    if (!isMounted.current) return;
+    
+    let isCancelled = false;
 
-    const currentOrders = ordersRef.current;
-    const currentPayments = paymentsRef.current;
-    const cached = openingBalanceCache.current.get(date);
+    const executeDateChange = async () => {
+      const date = selectedDate;
+      const monthKey = getMonthKey(date);
 
-    if (cached !== undefined) {
-      // Instant render — no network call
-      setDaySummary(computeLocalSummary(date, currentOrders, currentPayments, cached));
-    } else {
-      // Show provisional instantly, then fetch real opening balance
-      setDaySummary(computeLocalSummary(date, currentOrders, currentPayments, 0));
-      DataStore.getDaySummaryForDate(date, currentOrders, currentPayments)
-        .then((serverSummary) => {
-          openingBalanceCache.current.set(date, serverSummary.nabta_yesterday_balance);
-          setDaySummary(serverSummary);
-        })
-        .catch(console.error);
-    }
-  }, [selectedDate]);
+      // 1. If we don't have this month's data yet, fetch it (shows spinner)
+      if (!loadedMonths.current.has(monthKey)) {
+        await loadMonthData(date);
+        if (isCancelled) return;
+      }
 
-  // ─── Mutators: optimistic in-memory updates ───────────────────────────────
+      // 2. We now have the month data in memory. Render instantly!
+      const currentOrders = ordersRef.current;
+      const currentPayments = paymentsRef.current;
+      
+      const serverSummary = summariesCache.current.get(date);
+      
+      if (serverSummary) {
+        setDaySummary(computeLocalSummary(date, currentOrders, currentPayments, serverSummary.nabta_yesterday_balance));
+      } else {
+        // If the server didn't have a summary for this date yet, the backend will auto-create it next time we fetch/mutate.
+        // For now, let's optimistically find the most recent previous summary in cache.
+        let latestKnownDate = '';
+        let latestKnownBalance = 0;
+        for (const [key, val] of summariesCache.current.entries()) {
+          if (key < date && key > latestKnownDate) {
+            latestKnownDate = key;
+            latestKnownBalance = val.nabta_today_balance; // Use the closing balance of the previous day!
+          }
+        }
+        setDaySummary(computeLocalSummary(date, currentOrders, currentPayments, latestKnownBalance));
+        
+        // Asynchronously fetch the actual day summary to ensure backend creates it properly and we get authoritative data
+        DataStore.getDaySummaryForDate(date, currentOrders, currentPayments)
+          .then((s) => {
+            if (!isCancelled) {
+              summariesCache.current.set(date, s);
+              setDaySummary(s); // Update with authoritative
+            }
+          })
+          .catch(console.error);
+      }
+    };
+
+    executeDateChange();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedDate, loadMonthData]);
+
   const refreshSummaryForDate = useCallback((date: string, updatedOrders: Order[], updatedPayments: Payment[]) => {
-    const cached = openingBalanceCache.current.get(date);
-    if (cached !== undefined) {
-      setDaySummary(computeLocalSummary(date, updatedOrders, updatedPayments, cached));
-    } else {
-      DataStore.getDaySummaryForDate(date, updatedOrders, updatedPayments)
-        .then((s) => {
-          openingBalanceCache.current.set(date, s.nabta_yesterday_balance);
-          setDaySummary(s);
-        })
-        .catch(console.error);
-    }
+    // When a mutation happens, the backend auto-updates the summary.
+    // Fetch the new summary from server to stay perfectly in sync.
+    DataStore.getDaySummaryForDate(date, updatedOrders, updatedPayments)
+      .then((s) => {
+        summariesCache.current.set(date, s);
+        setDaySummary(s);
+      })
+      .catch(console.error);
   }, []);
 
   const addOrder = async (
@@ -250,17 +296,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const updateYesterdayOpeningBalance = async (amount: number) => {
     const updated = await DataStore.updateYesterdayBalance(selectedDate, amount);
-    // Update cache with new opening balance
-    openingBalanceCache.current.set(selectedDate, updated.nabta_yesterday_balance);
+    summariesCache.current.set(selectedDate, updated);
     setDaySummary(updated);
     showToast(`Yesterday opening balance updated to AED ${amount}`, 'success');
   };
 
+  const refreshData = async () => {
+    loadedMonths.current.clear();
+    summariesCache.current.clear();
+    await loadMonthData(selectedDate, true);
+  };
+
   const resetToDefaultData = () => {
     DataStore.resetToSeed();
-    openingBalanceCache.current.clear();
-    initialLoadDone.current = false;
-    loadData(selectedDate);
+    loadedMonths.current.clear();
+    summariesCache.current.clear();
+    loadMonthData(selectedDate, true);
     showToast('Reset to demo sample data', 'info');
   };
 
@@ -282,10 +333,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         addPayment,
         removePayment,
         updateYesterdayOpeningBalance,
-        refreshData: () => {
-          openingBalanceCache.current.clear();
-          return loadData(selectedDate);
-        },
+        refreshData,
         resetToDefaultData,
       }}
     >

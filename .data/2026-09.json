@@ -51,6 +51,214 @@
       "notes": "",
       "amount_received": 480,
       "created_at": "2026-09-05T01:34:49.903Z"
+    },
+    {
+      "id": "c93238fd-440c-49ed-a339-ea39f3994aa6",
+      "date": "2026-09-02",
+      "client_name": "Abu Al Joud",
+      "qty": 25,
+      "cost_price": 4,
+      "nabta_bill": 100,
+      "client_bill": 112.5,
+      "jahed_balance": 12.5,
+      "notes": "",
+      "amount_received": 112.5,
+      "created_at": "2026-09-05T03:29:24.790Z"
+    },
+    {
+      "id": "68fb639b-fceb-48dc-8930-dc20d898a9fd",
+      "date": "2026-09-02",
+      "client_name": "Al Mallah",
+      "qty": 25,
+      "cost_price": 4,
+      "nabta_bill": 100,
+      "client_bill": 112.5,
+      "jahed_balance": 12.5,
+      "notes": "",
+      "amount_received": 112.5,
+      "created_at": "2026-09-05T03:29:24.792Z"
+    },
+    {
+      "id": "0e1c5cca-7061-4153-915e-f444cecb8a88",
+      "date": "2026-09-02",
+      "client_name": "Khalifa Sharjah",
+      "qty": 70,
+      "cost_price": 3,
+      "nabta_bill": 210,
+      "client_bill": 245,
+      "jahed_balance": 35,
+      "notes": "",
+      "amount_received": 245,
+      "created_at": "2026-09-05T03:29:24.792Z"
+    },
+    {
+      "id": "b3cab9ee-a14c-4217-bc71-6635b1bd908f",
+      "date": "2026-09-02",
+      "client_name": "Xender Peeled",
+      "qty": 120,
+      "cost_price": 3.6,
+      "nabta_bill": 432,
+      "client_bill": 480,
+      "jahed_balance": 48,
+      "notes": "",
+      "amount_received": 480,
+      "created_at": "2026-09-05T03:29:24.793Z"
+    },
+    {
+      "id": "02e064cb-ad99-4386-a104-42c9734e998e",
+      "date": "2026-09-02",
+      "client_name": "Villago",
+      "qty": 20,
+      "cost_price": 4,
+      "nabta_bill": 80,
+      "client_bill": 120,
+      "jahed_balance": 40,
+      "notes": "",
+      "amount_received": 120,
+      "created_at": "2026-09-05T03:29:24.793Z"
+    },
+    {
+      "id": "ddb04130-0413-4aeb-bb08-6ff40b059904",
+      "date": "2026-09-02",
+      "client_name": "Sahelnom",
+      "qty": 30,
+      "cost_price": 4,
+      "nabta_bill": 120,
+      "client_bill": 150,
+      "jahed_balance": 30,
+      "notes": "",
+      "amount_received": 150,
+      "created_at": "2026-09-05T03:29:24.793Z"
+    },
+    {
+      "id": "d089de7e-4fef-4d9a-902f-d2673ff49770",
+      "date": "2026-09-03",
+      "client_name": "Abu Al Joud",
+      "qty": 30,
+      "cost_price": 4,
+      "nabta_bill": 120,
+      "client_bill": 135,
+      "jahed_balance": 15,
+      "notes": "",
+      "amount_received": 135,
+      "created_at": "2026-09-05T03:30:29.301Z"
+    },
+    {
+      "id": "f0914713-c4f6-4143-8a00-1238c2369213",
+      "date": "2026-09-03",
+      "client_name": "Xender Peeled",
+      "qty": 120,
+      "cost_price": 3.6,
+      "nabta_bill": 432,
+      "client_bill": 480,
+      "jahed_balance": 48,
+      "notes": "",
+      "amount_received": 480,
+      "created_at": "2026-09-05T03:30:29.302Z"
+    },
+    {
+      "id": "a207fbbe-cb3a-4c15-8837-d15a67c1831c",
+      "date": "2026-09-03",
+      "client_name": "Khalifa Sharjah",
+      "qty": 50,
+      "cost_price": 3,
+      "nabta_bill": 150,
+      "client_bill": 175,
+      "jahed_balance": 25,
+      "notes": "",
+      "amount_received": 175,
+      "created_at": "2026-09-05T03:30:29.302Z"
+    },
+    {
+      "id": "d389a0f0-f41c-4791-a391-2d38b90aa55c",
+      "date": "2026-09-03",
+      "client_name": "Villago",
+      "qty": 20,
+      "cost_price": 4,
+      "nabta_bill": 80,
+      "client_bill": 120,
+      "jahed_balance": 40,
+      "notes": "",
+      "amount_received": 120,
+      "created_at": "2026-09-05T03:30:29.302Z"
+    },
+    {
+      "id": "f78f9458-1064-4337-b613-d31cc19540a0",
+      "date": "2026-09-04",
+      "client_name": "Loulia Pearl",
+      "qty": 40,
+      "cost_price": 4,
+      "nabta_bill": 160,
+      "client_bill": 200,
+      "jahed_balance": 40,
+      "notes": "",
+      "amount_received": 200,
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "2df83903-799b-4eec-bbb7-27ca93556f88",
+      "date": "2026-09-04",
+      "client_name": "Xender Peeled",
+      "qty": 120,
+      "cost_price": 3.6,
+      "nabta_bill": 432,
+      "client_bill": 480,
+      "jahed_balance": 48,
+      "notes": "",
+      "amount_received": 480,
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "bc2f3f42-20f9-407e-ae3a-62e6cfa0f333",
+      "date": "2026-09-04",
+      "client_name": "Usta Tavuk",
+      "qty": 20,
+      "cost_price": 4,
+      "nabta_bill": 80,
+      "client_bill": 90,
+      "jahed_balance": 10,
+      "notes": "",
+      "amount_received": 90,
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "6d2f7921-7269-49f4-a343-c1b7e96f54d2",
+      "date": "2026-09-04",
+      "client_name": "Khalifa Sharjah",
+      "qty": 50,
+      "cost_price": 3,
+      "nabta_bill": 150,
+      "client_bill": 175,
+      "jahed_balance": 25,
+      "notes": "",
+      "amount_received": 175,
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "2cc6ac25-fd6c-4fa2-b7af-765c99b23ad9",
+      "date": "2026-09-04",
+      "client_name": "Allo Sham",
+      "qty": 20,
+      "cost_price": 4,
+      "nabta_bill": 80,
+      "client_bill": 90,
+      "jahed_balance": 10,
+      "notes": "",
+      "amount_received": 90,
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "7702fcc1-1527-4725-8d78-4f2c27b77a93",
+      "date": "2026-09-04",
+      "client_name": "Abu Al Joud",
+      "qty": 30,
+      "cost_price": 4,
+      "nabta_bill": 120,
+      "client_bill": 135,
+      "jahed_balance": 15,
+      "notes": "",
+      "amount_received": 135,
+      "created_at": "2026-09-05T03:31:29.565Z"
     }
   ],
   "payments": [],
@@ -63,6 +271,33 @@
       "nabta_today_balance": -164,
       "notes": "",
       "updated_at": "2026-09-05T01:34:49.903Z"
+    },
+    {
+      "date": "2026-09-02",
+      "nabta_yesterday_balance": -164,
+      "jahed_balance": 178,
+      "paid": 0,
+      "nabta_today_balance": -342,
+      "notes": "",
+      "updated_at": "2026-09-05T03:29:24.794Z"
+    },
+    {
+      "date": "2026-09-03",
+      "nabta_yesterday_balance": -342,
+      "jahed_balance": 128,
+      "paid": 0,
+      "nabta_today_balance": -470,
+      "notes": "",
+      "updated_at": "2026-09-05T03:30:29.339Z"
+    },
+    {
+      "date": "2026-09-04",
+      "nabta_yesterday_balance": -470,
+      "jahed_balance": 148,
+      "paid": 0,
+      "nabta_today_balance": -618,
+      "notes": "",
+      "updated_at": "2026-09-05T03:31:29.580Z"
     }
   ],
   "clients": [
@@ -85,6 +320,31 @@
       "id": "d7747b45-9042-49bc-a6c6-ffe937469733",
       "name": "Xender Peeled",
       "created_at": "2026-09-05T01:34:49.903Z"
+    },
+    {
+      "id": "06859489-132e-4051-af86-23904a48d216",
+      "name": "Villago",
+      "created_at": "2026-09-05T03:29:24.793Z"
+    },
+    {
+      "id": "3c5121e9-890e-4bbf-b04d-9672f5b0b94a",
+      "name": "Sahelnom",
+      "created_at": "2026-09-05T03:29:24.793Z"
+    },
+    {
+      "id": "e89eda9f-b456-4f41-a87f-483a3eb7fde6",
+      "name": "Loulia Pearl",
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "dcaa5fb5-2162-4085-8b72-63d0e4eb22a1",
+      "name": "Usta Tavuk",
+      "created_at": "2026-09-05T03:31:29.564Z"
+    },
+    {
+      "id": "eda2e045-a1d0-4aab-962d-40120397b3a9",
+      "name": "Allo Sham",
+      "created_at": "2026-09-05T03:31:29.564Z"
     }
   ]
 }

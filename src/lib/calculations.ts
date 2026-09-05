@@ -15,10 +15,16 @@ export function calculateClientBill(qty: number, clientPrice: number): number {
 }
 
 /**
- * Calculates Jahed Balance: Client No Pay
- * (Replaced old profit logic based on new accounting rule)
+ * Calculates Jahed Balance (Profit): Client Bill - Nabta Bill
  */
-export function calculateJahedBalance(clientBill: number, amountReceived: number): number {
+export function calculateJahedBalance(clientBill: number, nabtaBill: number): number {
+  return Number((clientBill - nabtaBill).toFixed(2));
+}
+
+/**
+ * Calculates Client No Pay: Unpaid portion of the client's bill
+ */
+export function calculateClientNoPay(clientBill: number, amountReceived?: number): number {
   return Number(Math.max(0, clientBill - (amountReceived || 0)).toFixed(2));
 }
 
@@ -33,7 +39,7 @@ export function computeOrderFields(params: {
 }): { nabta_bill: number; client_bill: number; jahed_balance: number } {
   const nabta_bill = calculateNabtaBill(params.qty, params.cost_price);
   const client_bill = calculateClientBill(params.qty, params.client_price);
-  const jahed_balance = calculateJahedBalance(client_bill, params.amount_received || 0);
+  const jahed_balance = calculateJahedBalance(client_bill, nabta_bill);
 
   return {
     nabta_bill,

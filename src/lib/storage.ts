@@ -1,7 +1,27 @@
 import { Order, Payment, DaySummary } from '@/types';
 import { computeOrderFields, calculateDaySummary } from './calculations';
 
+export interface MonthlyDataPayload {
+  orders: Order[];
+  payments: Payment[];
+  clients: any[];
+  day_summaries: DaySummary[];
+}
+
 export const DataStore = {
+  // Fetch entire month's data bundle in one shot
+  async getFullMonthData(dateStr: string): Promise<MonthlyDataPayload | null> {
+    try {
+      const res = await fetch(`/api/month?date=${dateStr}`, { cache: 'no-store' });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Fallback getting month data:', e);
+    }
+    return null;
+  },
+
   // Fetch all orders from server
   async getOrders(): Promise<Order[]> {
     try {

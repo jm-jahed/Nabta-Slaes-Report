@@ -44,6 +44,22 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
   // Adjusted amounts
   const adjustmentsTotal = dayPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const todayBalance = Number(daySummary?.nabta_today_balance || 0);
+
+  // Client No Pay calculation
+  const noPayClients: Array<{ client_name: string, amount: number }> = [];
+  dayOrders.forEach(o => {
+    const amountReceived = o.amount_received !== undefined ? Number(o.amount_received) : Number(o.client_bill || 0);
+    const unpaid = Math.max(0, Number(o.client_bill || 0) - amountReceived);
+    if (unpaid > 0) {
+      const existing = noPayClients.find(c => c.client_name === o.client_name);
+      if (existing) {
+        existing.amount += unpaid;
+      } else {
+        noPayClients.push({ client_name: o.client_name, amount: unpaid });
+      }
+    }
+  });
+  const totalNoPay = noPayClients.reduce((sum, c) => sum + c.amount, 0);
   
   const isTodayBalancePositive = todayBalance >= 0;
 
@@ -162,13 +178,36 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
 
           <div className="mt-3">
             <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              +{formatAED(jahedBalance)}
+              -{formatAED(jahedBalance)}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
               Total Profit automatically subtracted
             </p>
           </div>
         </div>
+
+        {/* Client No Pay */}
+        {noPayClients.length > 0 && (
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-rose-500/30 dark:border-rose-500/20 shadow-sm flex flex-col justify-between md:col-span-3">
+            <div className="flex items-center justify-between border-b border-rose-100 dark:border-rose-900/30 pb-3 mb-3">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-rose-500">
+                Unpaid Client Orders (No Pay)
+              </span>
+              <span className="text-sm font-black font-mono text-rose-600">
+                Total: -{formatAED(totalNoPay)}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {noPayClients.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{c.client_name}</span>
+                  <span className="text-xs font-mono font-bold text-rose-500">-{formatAED(c.amount)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 3. Nabta Today Balance (Result) */}
         <div className={`p-5 rounded-2xl border shadow-lg flex flex-col justify-between ${
