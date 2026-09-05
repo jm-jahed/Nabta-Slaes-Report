@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Paths that are publicly accessible
-  const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout'];
+  const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout', '/api/diagnostics'];
   if (publicPaths.some(p => pathname.startsWith(p)) || pathname.startsWith('/_next') || pathname.startsWith('/favicon.ico')) {
     // If logged in and trying to access /login, redirect to dashboard
     if (pathname === '/login') {
