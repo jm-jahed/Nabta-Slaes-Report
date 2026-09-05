@@ -28,8 +28,8 @@ export function middleware(req: NextRequest) {
     const session = JSON.parse(sessionCookie.value);
     const role = session.role;
 
-    // Nabta user must not access admin routes
-    const adminOnlyRoutes = ['/orders', '/payments', '/reports', '/settings'];
+    // Nabta user must not access admin routes or APIs
+    const adminOnlyRoutes = ['/orders', '/payments', '/reports', '/settings', '/clients', '/api/orders', '/api/payments', '/api/summaries', '/api/clients'];
     if (role === 'nabta' && adminOnlyRoutes.some(p => pathname.startsWith(p))) {
       // Redirect Nabta to the dashboard (which shows the Nabta Report)
       return NextResponse.redirect(new URL('/', req.url));

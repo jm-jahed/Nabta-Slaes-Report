@@ -17,7 +17,7 @@ import {
 import { useTheme } from '@/context/ThemeContext';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { isSupabaseConfigured } from '@/lib/supabase';
+// Removed Supabase indicator
 import { format, parseISO } from 'date-fns';
 
 interface HeaderProps {
@@ -30,7 +30,6 @@ export default function Header({ onMenuClick, onNewOrderClick, onNewPaymentClick
   const { theme, toggleTheme } = useTheme();
   const { selectedDate, setSelectedDate } = useData();
   const { user } = useAuth();
-  const isCloudConnected = isSupabaseConfigured();
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-20 px-4 sm:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80">
@@ -82,19 +81,6 @@ export default function Header({ onMenuClick, onNewOrderClick, onNewPaymentClick
             <span className="hidden md:inline">Add Payment</span>
           </button>
         )}
-
-        {/* Database Mode Badge */}
-        <div
-          title={isCloudConnected ? 'Connected to Supabase PostgreSQL' : 'Using persistent local SQLite/Storage (Supabase keys can be added in Settings)'}
-          className={`hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-            isCloudConnected
-              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-              : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-          }`}
-        >
-          <Database className="w-3.5 h-3.5" />
-          <span>{isCloudConnected ? 'Supabase Sync' : 'Local + Auto Sync'}</span>
-        </div>
 
         {/* Dark/Light Mode Toggle */}
         <button

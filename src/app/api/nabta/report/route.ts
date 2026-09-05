@@ -1,35 +1,25 @@
 import { NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
-import { LocalFS } from '@/lib/localDataStore';
+import { loadMonthlyData } from '@/lib/dataManager';
 import { format, parseISO } from 'date-fns';
 
-// Force dynamic rendering — this route reads live data and must NOT be statically cached
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    let orders: any[] = [];
-    let payments: any[] = [];
-    let summariesArr: any[] = [];
+    const { searchParams } = new URL(req.url);
+    const dateStr = searchParams.get('date');
+    
+    // Load monthly data (if no date is provided, it loads current month)
+    const data = await loadMonthlyData(dateStr || undefined);
 
-    if (isSupabaseConfigured()) {
-      const [ordersRes, paymentsRes, summariesRes] = await Promise.all([
-        supabase.from('orders').select('id,date,client_name,qty,cost_price,nabta_bill,client_bill,jahed_balance,notes,amount_received,paid_status').order('date', { ascending: true }),
-        supabase.from('payments').select('id,date,amount,reason,payment_method,recipient').order('date', { ascending: true }),
-        supabase.from('day_summaries').select('*').order('date', { ascending: true }),
-      ]);
-      orders = ordersRes.data || [];
-      payments = paymentsRes.data || [];
-      summariesArr = summariesRes.data || [];
-    } else {
-      orders = LocalFS.getOrders();
-      payments = LocalFS.getPayments();
-      summariesArr = LocalFS.getDaySummaries();
-    }
+    const orders = data.orders || [];
+    const payments = data.payments || [];
+    const summariesArr = data.day_summaries || [];
+    
     const summaries: Record<string, any> = {};
     summariesArr.forEach((s) => { summaries[s.date] = s; });
 
-    // 2. Collect unique dates
+    // Collect unique dates
     const datesSet = new Set<string>();
     orders.forEach((o) => o.date && datesSet.add(o.date));
     payments.forEach((p) => p.date && datesSet.add(p.date));
@@ -40,7 +30,8 @@ export async function GET() {
     // Global No Pay calculation across ALL orders
     const globalNoPayMap = new Map<string, number>();
     orders.forEach((o) => {
-      const noPayAmount = Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
+      const amountReceived = o.amount_received !== undefined ? Number(o.amount_received) : Number(o.client_bill || o.client_amount || 0);
+      const noPayAmount = Math.max(0, Number(o.client_bill || o.client_amount || 0) - amountReceived);
       if (noPayAmount > 0) {
         globalNoPayMap.set(o.client_name, (globalNoPayMap.get(o.client_name) || 0) + noPayAmount);
       }
@@ -48,23 +39,23 @@ export async function GET() {
     const globalNoPayClients = Array.from(globalNoPayMap.entries()).map(([client_name, amount]) => ({ client_name, amount: Number(amount.toFixed(2)) }));
     const totalGlobalNoPay = Number(globalNoPayClients.reduce((sum, c) => sum + c.amount, 0).toFixed(2));
 
-    // 3. Build sanitized day blocks — NO client_price ever!
+    // Build sanitized day blocks
     let runningBalance = 0;
-    const dayBlocks = sortedDates.map((dateStr) => {
-      const dayOrders = orders.filter((o) => o.date === dateStr);
-      const dayPayments = payments.filter((p) => p.date === dateStr);
+    const dayBlocks = sortedDates.map((d) => {
+      const dayOrders = orders.filter((o) => o.date === d);
+      const dayPayments = payments.filter((p) => p.date === d);
 
       const sanitizedOrders = dayOrders.map((o) => ({
         id: o.id,
         date: o.date,
         client_name: o.client_name,
-        qty: Number(o.qty || 0),
-        cost_price: Number(o.cost_price || 0),
-        nabta_bill: Number(o.nabta_bill || 0),
-        client_bill: Number(o.client_bill || 0),
-        jahed_balance: Number(o.jahed_balance || 0),
+        qty: Number(o.qty || o.quantity || 0),
+        cost_price: Number(o.cost_price || o.unit_price || 0),
+        nabta_bill: Number(o.nabta_bill || o.total_amount || 0),
+        client_bill: Number(o.client_bill || o.client_amount || 0),
+        jahed_balance: Number(o.jahed_balance || (Number(o.client_bill || o.client_amount || 0) - Number(o.nabta_bill || o.total_amount || 0)) || 0),
         notes: o.notes || '',
-        amount_received: Number(o.amount_received || 0)
+        amount_received: Number(o.amount_received || o.client_bill || o.client_amount || 0)
       }));
 
       const jahed_balance = Number(sanitizedOrders.reduce((s, o) => s + o.jahed_balance, 0).toFixed(2));
@@ -73,7 +64,8 @@ export async function GET() {
 
       const noPayMap = new Map<string, number>();
       dayOrders.forEach(o => {
-        const noPayAmount = Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
+        const amountReceived = o.amount_received !== undefined ? Number(o.amount_received) : Number(o.client_bill || o.client_amount || 0);
+        const noPayAmount = Math.max(0, Number(o.client_bill || o.client_amount || 0) - amountReceived);
         if (noPayAmount > 0) {
           noPayMap.set(o.client_name, (noPayMap.get(o.client_name) || 0) + noPayAmount);
         }
@@ -81,20 +73,21 @@ export async function GET() {
       const no_pay_clients = Array.from(noPayMap.entries()).map(([client_name, amount]) => ({ client_name, amount: Number(amount.toFixed(2)) }));
       const total_no_pay_amount = Number(no_pay_clients.reduce((sum, c) => sum + c.amount, 0).toFixed(2));
 
-      const nabta_yesterday_balance = summaries[dateStr]?.nabta_yesterday_balance !== undefined
-        ? Number(summaries[dateStr].nabta_yesterday_balance)
-        : runningBalance;
+      const nabta_yesterday_balance = summaries[d]?.previous_balance !== undefined 
+        ? Number(summaries[d].previous_balance)
+        : (summaries[d]?.nabta_yesterday_balance !== undefined ? Number(summaries[d].nabta_yesterday_balance) : runningBalance);
 
-      // Nabta Balance = Yesterday + Total Paid (by clients) - Vouchers
-      const orders_paid = Number(sanitizedOrders.reduce((s, o) => s + Number(o.amount_received || 0), 0).toFixed(2));
-      const nabta_today_balance = Number((nabta_yesterday_balance + orders_paid - paid).toFixed(2));
+      const nabta_today_balance = summaries[d]?.next_day_balance !== undefined
+        ? Number(summaries[d].next_day_balance)
+        : Number((nabta_yesterday_balance - jahed_balance).toFixed(2));
+
       runningBalance = nabta_today_balance;
 
-      let formattedDate = dateStr;
-      try { formattedDate = format(parseISO(dateStr), 'dd MMMM yyyy'); } catch {}
+      let formattedDate = d;
+      try { formattedDate = format(parseISO(d), 'dd MMMM yyyy'); } catch {}
 
       return {
-        date: dateStr,
+        date: d,
         formattedDate,
         orders: sanitizedOrders,
         summary: { nabta_yesterday_balance, jahed_balance, paid, paid_reason: paidReasons, nabta_today_balance, total_no_pay_amount },

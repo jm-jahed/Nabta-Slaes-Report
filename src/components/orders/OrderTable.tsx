@@ -25,8 +25,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
   const totalNabtaBill = orders.reduce((sum, o) => sum + Number(o.nabta_bill || 0), 0);
   const totalClientBill = orders.reduce((sum, o) => sum + Number(o.client_bill || 0), 0);
   const totalJahedBalance = orders.reduce((sum, o) => sum + Number(o.jahed_balance || 0), 0);
-  const totalAmountPaid = orders.reduce((sum, o) => sum + Number(o.amount_received || 0), 0);
-  const totalNoPay = orders.reduce((sum, o) => sum + Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0)), 0);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-900/5 overflow-hidden">
@@ -78,7 +76,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {orders.map((order) => {
-              const noPay = Math.max(0, Number(order.client_bill || 0) - Number(order.amount_received || 0));
               const isProfit = Number(order.jahed_balance) >= 0;
               return (
                 <div key={order.id} className="p-4 space-y-3">
@@ -122,8 +119,8 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     </div>
                   </div>
 
-                  {/* Row 2: Key financials grid */}
-                  <div className="grid grid-cols-3 gap-2 text-xs">
+                  {/* Key financials grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 text-center">
                       <p className="text-[10px] text-slate-400 font-semibold uppercase">Qty</p>
                       <p className="font-bold font-mono text-slate-900 dark:text-white mt-0.5">{formatNumber(order.qty)}</p>
@@ -135,18 +132,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-2.5 text-center">
                       <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold uppercase">Client Bill</p>
                       <p className="font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5 text-[11px]">{formatAED(order.client_bill)}</p>
-                    </div>
-                  </div>
-
-                  {/* Row 3: Payment + No Pay + Jahed */}
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 text-center">
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Paid</p>
-                      <p className="font-bold font-mono text-slate-800 dark:text-slate-200 mt-0.5 text-[11px]">{formatAED(order.amount_received || 0)}</p>
-                    </div>
-                    <div className={`rounded-xl p-2.5 text-center ${noPay > 0 ? 'bg-rose-50 dark:bg-rose-950/30' : 'bg-emerald-50 dark:bg-emerald-950/30'}`}>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">No Pay</p>
-                      <p className={`font-bold font-mono mt-0.5 text-[11px] ${noPay > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{formatAED(noPay)}</p>
                     </div>
                     <div className={`rounded-xl p-2.5 text-center ${order.jahed_balance > 0 ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-emerald-50 dark:bg-emerald-950/30'}`}>
                       <p className="text-[10px] text-slate-400 font-semibold uppercase">Jahed</p>
@@ -163,7 +148,7 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
             {orders.length > 0 && (
               <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t-2 border-slate-200 dark:border-slate-700">
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Day Totals — {orders[0]?.date}</p>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   <div className="text-center">
                     <p className="text-[10px] text-slate-400">Total Qty</p>
                     <p className="font-black font-mono text-slate-900 dark:text-white">{formatNumber(totalQty)}</p>
@@ -176,19 +161,9 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     <p className="text-[10px] text-amber-500">Client Total</p>
                     <p className="font-black font-mono text-amber-600 dark:text-amber-400 text-[11px]">{formatAED(totalClientBill)}</p>
                   </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs mt-2">
                   <div className="text-center">
-                    <p className="text-[10px] text-slate-400">Total Paid</p>
-                    <p className="font-black font-mono text-slate-800 dark:text-slate-200 text-[11px]">{formatAED(totalAmountPaid)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-rose-400">Total No Pay</p>
-                    <p className="font-black font-mono text-rose-500 text-[11px]">{formatAED(totalNoPay)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-amber-500">Jahed Balance</p>
-                    <p className="font-black font-mono text-amber-600 dark:text-amber-400 text-[11px]">{formatAED(totalJahedBalance)}</p>
+                    <p className="text-[10px] text-emerald-500">Jahed Balance</p>
+                    <p className="font-black font-mono text-emerald-600 dark:text-emerald-400 text-[11px]">{formatAED(totalJahedBalance)}</p>
                   </div>
                 </div>
               </div>
@@ -209,8 +184,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
               <th className="py-3.5 px-5 text-right">Nabta Bill</th>
               <th className="py-3.5 px-5 text-right">Client Bill</th>
               <th className="py-3.5 px-5 text-right">Jahed Balance</th>
-              <th className="py-3.5 px-5 text-right">Amount Paid</th>
-              <th className="py-3.5 px-5 text-right">No Pay</th>
               <th className="py-3.5 px-5 text-center">Actions</th>
             </tr>
           </thead>
@@ -239,7 +212,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
             ) : (
               orders.map((order) => {
                 const isProfit = Number(order.jahed_balance) >= 0;
-                const noPay = Math.max(0, Number(order.client_bill || 0) - Number(order.amount_received || 0));
                 return (
                   <tr key={order.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group">
                     <td className="py-4 px-5 font-mono text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">{order.date}</td>
@@ -254,17 +226,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     <td className="py-4 px-5 text-right whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-extrabold font-mono ${order.jahed_balance > 0 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'}`}>
                         {formatAED(order.jahed_balance)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 text-right whitespace-nowrap">
-                      <div className="font-bold text-slate-900 dark:text-white font-mono">{formatAED(order.amount_received || 0)}</div>
-                      <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${order.paid_status === 'Paid' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : order.paid_status === 'Partial' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                        {order.paid_status || 'Unpaid'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 text-right whitespace-nowrap">
-                      <span className={`font-bold font-mono ${noPay > 0 ? 'text-rose-500' : 'text-slate-400 dark:text-slate-600'}`}>
-                        {formatAED(noPay)}
                       </span>
                     </td>
                     <td className="py-4 px-5 text-center whitespace-nowrap">
@@ -298,8 +259,6 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
                     {formatAED(totalJahedBalance)}
                   </span>
                 </td>
-                <td className="py-4 px-5 text-right font-mono font-bold text-slate-900 dark:text-white">{formatAED(totalAmountPaid)}</td>
-                <td className="py-4 px-5 text-right font-mono font-bold text-rose-500">{formatAED(totalNoPay)}</td>
                 <td></td>
               </tr>
             </tfoot>

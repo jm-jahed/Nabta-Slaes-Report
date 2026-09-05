@@ -13,43 +13,7 @@ interface OrderModalProps {
   orderToEdit?: Order | null;
 }
 
-/**
- * Parse the Balance input string into amount_received.
- * +X  → client paid X AED           → amount_received = X
- * -X  → client owes X AED (No Pay)  → amount_received = client_bill - X
- *  0  → no payment                  → amount_received = 0
- * EMPTY → client paid FULL Client Bill → amount_received = client_bill
- */
-function parseBalance(balanceStr: string, client_bill: number): number {
-  const s = balanceStr.trim();
-  if (s === '') return client_bill; // EMPTY = fully paid
-  if (s === '+' || s === '-') return 0;
-
-  if (s.startsWith('+')) {
-    const v = parseFloat(s.slice(1));
-    return isNaN(v) ? 0 : Math.max(0, v);
-  }
-
-  if (s.startsWith('-')) {
-    const noPay = parseFloat(s.slice(1));
-    if (isNaN(noPay)) return 0;
-    return Math.max(0, client_bill - noPay);
-  }
-
-  const v = parseFloat(s);
-  return isNaN(v) ? 0 : Math.max(0, v);
-}
-
-/** Returns true if the input string is a valid balance entry */
-function isValidBalance(s: string): boolean {
-  const t = s.trim();
-  if (t === '') return true;          // empty is OK
-  if (t === '+' || t === '-') return false; // incomplete
-  if (/^[+-]/.test(t)) {
-    return /^[+-]\d+(\.\d+)?$/.test(t);
-  }
-  return /^\d+(\.\d+)?$/.test(t);
-}
+// Payment calculations removed as requested
 
 export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalProps) {
   const { addOrder, editOrder, selectedDate, orders } = useData();
@@ -59,9 +23,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
   const [qty, setQty] = useState<number | string>(100);
   const [costPrice, setCostPrice] = useState<number | string>(4);
   const [clientPrice, setClientPrice] = useState<number | string>(5);
-  const [paymentNote, setPaymentNote] = useState('');
-  const [balanceInput, setBalanceInput] = useState('');
-  const [balanceError, setBalanceError] = useState('');
+  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -80,32 +42,18 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
       setQty(orderToEdit.qty);
       setCostPrice(orderToEdit.cost_price);
       setClientPrice(orderToEdit.client_price);
-      setPaymentNote(orderToEdit.notes || '');
-      // Represent stored amount_received as +X when editing
-      const amt = orderToEdit.amount_received;
-      setBalanceInput(amt && amt > 0 ? `+${amt}` : amt === 0 ? '' : '');
+      setNotes(orderToEdit.notes || '');
     } else {
       setDate(selectedDate);
       setClientName('');
       setQty(100);
       setCostPrice(4);
       setClientPrice(5);
-      setPaymentNote('');
-      setBalanceInput('');
+      setNotes('');
     }
-    setBalanceError('');
   }, [orderToEdit, selectedDate, isOpen]);
 
-  const previousNoPay = React.useMemo(() => {
-    if (!clientName.trim() || !orders) return 0;
-    return orders.reduce((sum, o) => {
-      if (orderToEdit && o.id === orderToEdit.id) return sum;
-      if (o.client_name.toLowerCase().trim() === clientName.toLowerCase().trim()) {
-        return sum + Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
-      }
-      return sum;
-    }, 0);
-  }, [clientName, orders, orderToEdit]);
+
 
   if (!isOpen) return null;
 
@@ -119,28 +67,11 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
     client_price: numClientPrice,
   });
 
-  const computedAmt = parseBalance(balanceInput, client_bill);
-  const currentNoPay = Math.max(0, client_bill - computedAmt);
 
-  const handleBalanceChange = (val: string) => {
-    setBalanceInput(val);
-    if (val.trim() && !isValidBalance(val)) {
-      setBalanceError('Invalid. Use +20, -30, or 0');
-    } else {
-      setBalanceError('');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || numQty <= 0 || numCost < 0 || numClientPrice < 0) return;
-    if (balanceError) return;
-    if (balanceInput.trim() && !isValidBalance(balanceInput)) return;
-
-    const amt = parseBalance(balanceInput, client_bill);
-    let computed_paid_status: 'Unpaid' | 'Paid' | 'Partial' = 'Unpaid';
-    if (amt >= client_bill && client_bill > 0) computed_paid_status = 'Paid';
-    else if (amt > 0) computed_paid_status = 'Partial';
 
     setIsSubmitting(true);
     try {
@@ -155,9 +86,9 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           nabta_bill,
           client_bill,
           jahed_balance,
-          notes: paymentNote.trim(),
-          paid_status: computed_paid_status,
-          amount_received: amt,
+          notes: notes.trim(),
+          amount_received: 0,
+          paid_status: 'Unpaid',
         });
       } else {
         await addOrder({
@@ -166,9 +97,9 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
           qty: numQty,
           cost_price: numCost,
           client_price: numClientPrice,
-          notes: paymentNote.trim(),
-          paid_status: computed_paid_status,
-          amount_received: amt,
+          notes: notes.trim(),
+          amount_received: 0,
+          paid_status: 'Unpaid',
         });
         try {
           confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
@@ -311,70 +242,18 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
             </div>
           </div>
 
-          {/* Row 3: Payment Note */}
+          {/* Row 3: Notes */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-              Payment Note (Optional)
+              Notes (Optional)
             </label>
             <input
               type="text"
-              placeholder="e.g. Cash, Bank transfer, No cash..."
-              value={paymentNote}
-              onChange={(e) => setPaymentNote(e.target.value)}
+              placeholder="e.g. Special instructions..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
-          </div>
-
-          {/* Row 4: Balance (AED) */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-              Balance (AED)
-            </label>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">+20</span> = paid 20 AED &nbsp;·&nbsp;
-              <span className="font-semibold text-rose-500">-30</span> = owes 30 AED &nbsp;·&nbsp;
-              leave empty = fully paid &nbsp;·&nbsp; 0 = no payment
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <div className="w-full sm:w-1/2">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="leave empty for full payment"
-                  value={balanceInput}
-                  onChange={(e) => handleBalanceChange(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border-2 text-base font-bold text-slate-900 dark:text-white focus:ring-4 focus:outline-none transition-all shadow-sm ${
-                    balanceError
-                      ? 'border-rose-500 focus:ring-rose-500/20'
-                      : 'border-emerald-500/30 focus:ring-emerald-500/20 focus:border-emerald-500'
-                  }`}
-                />
-                {balanceError && (
-                  <p className="mt-1 text-xs text-rose-500 font-medium">{balanceError}</p>
-                )}
-              </div>
-
-              <div className="w-full sm:w-1/2 flex items-center justify-between sm:justify-end gap-3 text-sm">
-                <span className="font-semibold text-slate-500 dark:text-slate-400">Order No Pay:</span>
-                <span className={`font-mono font-black text-lg ${currentNoPay > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                  {balanceInput.trim() === '' ? '—' : formatAED(currentNoPay)}
-                </span>
-              </div>
-            </div>
-
-            {previousNoPay > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50 flex flex-col gap-1 text-xs">
-                <div className="flex justify-between items-center text-rose-500/80 font-semibold">
-                  <span>Previous Outstanding No Pay:</span>
-                  <span className="font-mono">{formatAED(previousNoPay)}</span>
-                </div>
-                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-bold">
-                  <span>Total Cumulative No Pay:</span>
-                  <span className="font-mono">{formatAED(previousNoPay + currentNoPay)}</span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Live Calculation Preview Card */}
@@ -431,7 +310,7 @@ export default function OrderModal({ isOpen, onClose, orderToEdit }: OrderModalP
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !!balanceError}
+              disabled={isSubmitting}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-bold shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-50"
             >
               <Check className="w-4 h-4 stroke-[3]" />

@@ -1,16 +1,18 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
-import { LocalFS } from '@/lib/localDataStore';
+import { loadMonthlyData, saveMonthlyData } from '@/lib/dataManager';
 
-export async function GET() {
-  if (!isSupabaseConfigured()) {
-    const orders = LocalFS.getOrders().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return NextResponse.json(orders);
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get('date');
+    const data = await loadMonthlyData(date || undefined);
+    const sortedOrders = data.orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return NextResponse.json(sortedOrders);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-  const { data } = await supabase.from('orders').select('*').order('date', { ascending: false });
-  return NextResponse.json(data || []);
 }
 
 export async function POST(req: Request) {
@@ -45,33 +47,17 @@ export async function POST(req: Request) {
       created_at: new Date().toISOString()
     };
 
-    if (!isSupabaseConfigured()) {
-      const orders = LocalFS.getOrders();
-      orders.push(newOrder);
-      LocalFS.saveOrders(orders);
-      
-      // Auto-insert client
-      const clients = LocalFS.getClients();
-      const trimmedName = client_name.trim();
-      if (!clients.some((c: any) => c.name.toLowerCase() === trimmedName.toLowerCase())) {
-        clients.push({ id: 'cli-' + Date.now(), name: trimmedName, created_at: new Date().toISOString() });
-        LocalFS.saveClients(clients);
-      }
+    const data = await loadMonthlyData(date);
+    data.orders.push(newOrder);
 
-      return NextResponse.json(newOrder);
-    }
-
-    const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
-    
     // Auto-insert client
     const trimmedName = client_name.trim();
-    const { data: existingClient } = await supabase.from('clients').select('id').ilike('name', trimmedName).maybeSingle();
-    if (!existingClient) {
-      await supabase.from('clients').insert({ name: trimmedName });
+    if (!data.clients.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+      data.clients.push({ id: 'cli-' + Date.now(), name: trimmedName, created_at: new Date().toISOString() });
     }
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    await saveMonthlyData(data, date);
+    return NextResponse.json(newOrder);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -105,41 +91,22 @@ export async function PUT(req: Request) {
       updated_at: new Date().toISOString() 
     };
 
-    if (!isSupabaseConfigured()) {
-      const orders = LocalFS.getOrders();
-      const index = orders.findIndex((o: any) => o.id === body.id);
-      if (index !== -1) {
-        orders[index] = { ...orders[index], ...updatedData };
-        LocalFS.saveOrders(orders);
-        
-        // Auto-insert client
-        const clients = LocalFS.getClients();
-        const trimmedName = body.client_name?.trim();
-        if (trimmedName && !clients.some((c: any) => c.name.toLowerCase() === trimmedName.toLowerCase())) {
-          clients.push({ id: 'cli-' + Date.now(), name: trimmedName, created_at: new Date().toISOString() });
-          LocalFS.saveClients(clients);
-        }
+    const data = await loadMonthlyData(body.date);
+    const index = data.orders.findIndex(o => o.id === body.id);
+    if (index !== -1) {
+      data.orders[index] = { ...data.orders[index], ...updatedData };
 
-        return NextResponse.json(orders[index]);
+      // Auto-insert client
+      const trimmedName = body.client_name?.trim();
+      if (trimmedName && !data.clients.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+        data.clients.push({ id: 'cli-' + Date.now(), name: trimmedName, created_at: new Date().toISOString() });
       }
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+      await saveMonthlyData(data, body.date);
+      return NextResponse.json(data.orders[index]);
     }
 
-    const { data, error } = await supabase.from('orders')
-      .update(updatedData)
-      .eq('id', body.id).select().single();
-
-    // Auto-insert client
-    const trimmedName = body.client_name?.trim();
-    if (trimmedName) {
-      const { data: existingClient } = await supabase.from('clients').select('id').ilike('name', trimmedName).maybeSingle();
-      if (!existingClient) {
-        await supabase.from('clients').insert({ name: trimmedName });
-      }
-    }
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -149,17 +116,13 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const date = searchParams.get('date');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    if (!isSupabaseConfigured()) {
-      let orders = LocalFS.getOrders();
-      orders = orders.filter((o: any) => o.id !== id);
-      LocalFS.saveOrders(orders);
-      return NextResponse.json({ success: true });
-    }
-
-    const { error } = await supabase.from('orders').delete().eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const data = await loadMonthlyData(date || undefined);
+    data.orders = data.orders.filter(o => o.id !== id);
+    await saveMonthlyData(data, date || undefined);
+    
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

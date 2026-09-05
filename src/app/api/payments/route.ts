@@ -1,42 +1,40 @@
-import { NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/serverTokenRegistry';
-import { LocalFS } from '@/lib/localDataStore';
+export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  if (!isSupabaseConfigured()) {
-    const payments = LocalFS.getPayments().sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return NextResponse.json(payments);
+import { NextResponse } from 'next/server';
+import { loadMonthlyData, saveMonthlyData } from '@/lib/dataManager';
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get('date');
+    const data = await loadMonthlyData(date || undefined);
+    const sortedPayments = data.payments.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    return NextResponse.json(sortedPayments);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-  const { data } = await supabase.from('payments').select('*').order('date', { ascending: false });
-  return NextResponse.json(data || []);
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const id = 'pay-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
-    
+    const { date, amount, reason, payment_method, recipient } = body;
+
     const newPayment = {
-      id,
-      date: body.date,
-      amount: Number(body.amount) || 0,
-      reason: body.reason || 'Paid',
-      payment_method: body.payment_method || 'Cash',
-      recipient: body.recipient || '',
+      id: 'pay-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      date,
+      amount: Number(amount) || 0,
+      reason: reason || '',
+      payment_method: payment_method || 'Cash',
+      recipient: recipient || '',
       created_at: new Date().toISOString()
     };
 
-    if (!isSupabaseConfigured()) {
-      const payments = LocalFS.getPayments();
-      payments.push(newPayment);
-      LocalFS.savePayments(payments);
-      return NextResponse.json(newPayment);
-    }
+    const data = await loadMonthlyData(date);
+    data.payments.push(newPayment);
+    await saveMonthlyData(data, date);
 
-    const { data, error } = await supabase.from('payments').insert(newPayment).select().single();
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    return NextResponse.json(newPayment);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -46,17 +44,13 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const date = searchParams.get('date');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    if (!isSupabaseConfigured()) {
-      let payments = LocalFS.getPayments();
-      payments = payments.filter((p: any) => p.id !== id);
-      LocalFS.savePayments(payments);
-      return NextResponse.json({ success: true });
-    }
-
-    const { error } = await supabase.from('payments').delete().eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const data = await loadMonthlyData(date || undefined);
+    data.payments = data.payments.filter(p => p.id !== id);
+    await saveMonthlyData(data, date || undefined);
+    
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

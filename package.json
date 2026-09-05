@@ -9,8 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.5.1",
-    "@supabase/supabase-js": "^2.45.4",
+    "@octokit/rest": "^22.0.1",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

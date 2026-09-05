@@ -5,22 +5,15 @@ import { useData } from '@/context/DataContext';
 import { formatAED } from '@/lib/calculations';
 import {
   Wallet,
-  ArrowRight,
-  TrendingDown,
-  TrendingUp,
-  CreditCard,
-  Plus,
-  Trash2,
-  Edit3,
   Check,
-  RotateCcw,
-  Sparkles,
-  Info,
+  Edit3,
   CalendarDays,
+  FileText,
+  Trash2
 } from 'lucide-react';
 
 interface DaySummaryCardProps {
-  onOpenPaymentModal: () => void;
+  onOpenPaymentModal?: () => void;
 }
 
 export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardProps) {
@@ -29,6 +22,7 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
     selectedDate,
     payments,
     orders,
+    addPayment,
     removePayment,
     updateYesterdayOpeningBalance,
   } = useData();
@@ -36,20 +30,21 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
   const [isEditingOpening, setIsEditingOpening] = useState(false);
   const [openingBalanceInput, setOpeningBalanceInput] = useState<string>('');
 
+  // New Adjustment Form State
+  const [adjName, setAdjName] = useState('');
+  const [adjAmount, setAdjAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const dayPayments = payments.filter((p) => p.date === selectedDate);
   const dayOrders = orders.filter((o) => o.date === selectedDate);
 
   const yesterdayBalance = Number(daySummary?.nabta_yesterday_balance || 0);
   const jahedBalance = Number(daySummary?.jahed_balance || 0);
-  const paidAmount = Number(daySummary?.paid || 0);
+  
+  // Adjusted amounts
+  const adjustmentsTotal = dayPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const todayBalance = Number(daySummary?.nabta_today_balance || 0);
   
-  const ordersPaid = dayOrders.reduce((sum, o) => sum + Number(o.amount_received || 0), 0);
-
-  const clientNoPay = dayOrders.reduce((sum, o) => {
-    return sum + Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
-  }, 0);
-
   const isTodayBalancePositive = todayBalance >= 0;
 
   const handleSaveOpening = async () => {
@@ -58,6 +53,29 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
       await updateYesterdayOpeningBalance(num);
     }
     setIsEditingOpening(false);
+  };
+
+  const handleAddAdjustment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(adjAmount);
+    if (!adjName.trim() || isNaN(amount)) return;
+    
+    setIsSubmitting(true);
+    try {
+      await addPayment({
+        date: selectedDate,
+        amount: amount,
+        reason: adjName.trim(),
+        payment_method: 'Adjustment',
+        recipient: '',
+      });
+      setAdjName('');
+      setAdjAmount('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -78,27 +96,19 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Formula: Today Balance = Prev Balance + Paid Amounts − Expenses
+              Formula: Next Balance = Prev Balance − Jahed + Adjustments
             </p>
           </div>
         </div>
-
-        <button
-          onClick={onOpenPaymentModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 transition-all self-start sm:self-auto"
-        >
-          <CreditCard className="w-4 h-4" />
-          <span>Record New Payment</span>
-        </button>
       </div>
 
       {/* Primary Summary Metric Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1. Nabta Yesterday Balance */}
         <div className="relative p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              1. Previous Balance
+              NABTA {selectedDate} Balance
             </span>
             <button
               onClick={() => {
@@ -146,7 +156,7 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              2. Jahed Balance (Profit)
+              Jahed
             </span>
           </div>
 
@@ -155,48 +165,12 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
               +{formatAED(jahedBalance)}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              Total Client Bill - Nabta Bill
+              Total Profit automatically subtracted
             </p>
           </div>
         </div>
 
-        {/* 3. Client No Pay */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-rose-500/30 dark:border-rose-500/20 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              3. Client No Pay
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-2xl font-black font-mono text-rose-500 dark:text-rose-400">
-              {formatAED(clientNoPay)}
-            </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              Outstanding debt owed by clients
-            </p>
-          </div>
-        </div>
-
-        {/* 4. Client Payments / Adjustments */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-amber-500/30 dark:border-amber-500/20 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              4. Client Paid Amount
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
-              {formatAED(ordersPaid)}
-            </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              Actual money received & added to Nabta
-            </p>
-          </div>
-        </div>
-
-        {/* 5. Nabta Today Balance (Result) */}
+        {/* 3. Nabta Today Balance (Result) */}
         <div className={`p-5 rounded-2xl border shadow-lg flex flex-col justify-between ${
           isTodayBalancePositive
             ? 'bg-gradient-to-br from-emerald-950/80 to-emerald-900/90 border-emerald-500/50 text-emerald-100 shadow-emerald-950/30'
@@ -204,7 +178,7 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider opacity-90">
-              5. Next Nabta Balance
+              Next Nabta Balance
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/20">
               Result
@@ -216,29 +190,64 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
               {formatAED(todayBalance)}
             </p>
             <p className="text-[11px] opacity-80 mt-1 font-medium">
-              After deducting {formatAED(paidAmount)} expenses
+              After {formatAED(adjustmentsTotal)} in adjustments
             </p>
           </div>
         </div>
       </div>
 
-      {/* Payment Vouchers List for Active Date */}
+      {/* Adjustments Section */}
       <div className="rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800/80 p-5">
-        <div className="flex items-center justify-between mb-3.5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-amber-500" />
+            <FileText className="w-4 h-4 text-emerald-500" />
             <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-              Payments & Expense Vouchers for {selectedDate}
+              Summary Adjustments
             </h4>
           </div>
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">
-            Total: {formatAED(paidAmount)}
+            Total: {formatAED(adjustmentsTotal)}
           </span>
         </div>
 
+        {/* Dynamic Adjustment Input Form */}
+        <form onSubmit={handleAddAdjustment} className="flex flex-col sm:flex-row gap-3 mb-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50">
+          <div className="flex-1">
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Name</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Abu Al Joud" 
+              value={adjName}
+              onChange={e => setAdjName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="w-full sm:w-1/3">
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Amount (+ / -)</label>
+            <input 
+              type="text" 
+              inputMode="decimal"
+              placeholder="+1500 or -1800" 
+              value={adjAmount}
+              onChange={e => setAdjAmount(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex items-end">
+            <button 
+              type="submit"
+              disabled={isSubmitting || !adjName.trim() || !adjAmount.trim()}
+              className="w-full sm:w-auto px-5 py-2 h-[38px] rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold shadow-md transition-all flex items-center justify-center"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+
+        {/* Adjustments List */}
         {dayPayments.length === 0 ? (
-          <div className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
-            No payment deductions recorded for this date.
+          <div className="py-2 text-center text-xs text-slate-400 dark:text-slate-500">
+            No adjustments recorded.
           </div>
         ) : (
           <div className="space-y-2">
@@ -247,27 +256,16 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
                 key={pay.id}
                 className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 text-xs sm:text-sm"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
-                    {pay.payment_method?.[0] || 'C'}
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white">
-                      {pay.reason}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Method: {pay.payment_method || 'Cash'} {pay.recipient ? `• Paid To: ${pay.recipient}` : ''}
-                    </p>
-                  </div>
+                <div className="font-bold text-slate-900 dark:text-white">
+                  {pay.reason}
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="font-extrabold font-mono text-amber-600 dark:text-amber-400 text-sm">
-                    {formatAED(pay.amount)}
+                <div className="flex items-center gap-4">
+                  <span className={`font-extrabold font-mono text-sm ${pay.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {pay.amount > 0 ? '+' : ''}{pay.amount.toFixed(2)}
                   </span>
                   <button
                     onClick={() => removePayment(pay.id)}
-                    title="Delete payment voucher"
+                    title="Delete adjustment"
                     className="p-1 rounded-md text-slate-400 hover:text-rose-500 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />

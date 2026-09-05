@@ -1,5 +1,4 @@
 import { Order, Payment, DaySummary } from '@/types';
-import { supabase, isSupabaseConfigured } from './supabase';
 import { computeOrderFields, calculateDaySummary } from './calculations';
 
 export const DataStore = {
