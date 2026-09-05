@@ -60,8 +60,8 @@ function computeLocalSummary(
     dayOrders.reduce((s, o) => s + Number(o.amount_received || 0), 0).toFixed(2)
   );
 
-  // Nabta Balance = Yesterday + Total Paid (by clients) - Vouchers
-  const nabta_today_balance = Number((openingBalance + orders_paid - paid).toFixed(2));
+  // Nabta Balance = Yesterday - Jahed + Adjustments
+  const nabta_today_balance = Number((openingBalance - jahed_balance + paid).toFixed(2));
 
   return {
     date: dateStr,

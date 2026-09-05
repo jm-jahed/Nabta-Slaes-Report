@@ -21,7 +21,18 @@ export async function GET(req: Request) {
 
       const jahed_balance = Number(dayOrders.reduce((s, o) => s + Number(o.jahed_balance || 0), 0).toFixed(2));
       const adjustments = Number(dayPayments.reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2));
-      const nabta_yesterday_balance = Number(existingSummary.nabta_yesterday_balance || 0);
+      let nabta_yesterday_balance = Number(existingSummary.nabta_yesterday_balance || 0);
+
+      // Auto-heal if 0 or undefined
+      if (nabta_yesterday_balance === 0) {
+        const prevSummaries = data.day_summaries
+          .filter(s => s.date < dateStr)
+          .sort((a, b) => b.date.localeCompare(a.date));
+        if (prevSummaries.length > 0) {
+          nabta_yesterday_balance = Number(prevSummaries[0].nabta_today_balance || 0);
+          existingSummary.nabta_yesterday_balance = nabta_yesterday_balance;
+        }
+      }
 
       // New Formula: Prev Balance - Jahed + Adjustments
       const nabta_today_balance = Number((nabta_yesterday_balance - jahed_balance + adjustments).toFixed(2));
