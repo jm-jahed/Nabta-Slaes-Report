@@ -45,7 +45,7 @@ export default function OrderTable({ orders, onEditOrder, onNewOrder }: OrderTab
             </span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 hidden sm:block">
-            Nabta Bill (Qty × Cost) | Client Bill (Qty × Client Price) | Jahed Balance (No Pay)
+            Nabta Bill (Qty × Cost) | Client Bill (Qty × Client Price) | Jahed Balance (Profit)
           </p>
         </div>
 

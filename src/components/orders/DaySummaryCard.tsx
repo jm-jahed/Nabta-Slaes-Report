@@ -46,6 +46,10 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
   
   const ordersPaid = dayOrders.reduce((sum, o) => sum + Number(o.amount_received || 0), 0);
 
+  const clientNoPay = dayOrders.reduce((sum, o) => {
+    return sum + Math.max(0, Number(o.client_bill || 0) - Number(o.amount_received || 0));
+  }, 0);
+
   const isTodayBalancePositive = todayBalance >= 0;
 
   const handleSaveOpening = async () => {
@@ -74,7 +78,7 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Formula: Nabta Today Balance = Yesterday Balance − Jahed Balance − Paid Amount
+              Formula: Today Balance = Prev Balance + Paid Amounts − Expenses
             </p>
           </div>
         </div>
@@ -88,13 +92,13 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
         </button>
       </div>
 
-      {/* Primary Summary Metric Tiles in Pipeline Flow */}
+      {/* Primary Summary Metric Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* 1. Nabta Yesterday Balance */}
         <div className="relative p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              1. Yesterday Balance
+              1. Previous Balance
             </span>
             <button
               onClick={() => {
@@ -138,49 +142,61 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
           </div>
         </div>
 
-        {/* 2. Total Client Payments (Add) */}
+        {/* 2. Jahed Balance (Profit) */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              2. Client Payments
-            </span>
-            <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400">
-              (+ Add)
+              2. Jahed Balance (Profit)
             </span>
           </div>
 
           <div className="mt-3">
             <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              {formatAED(ordersPaid)}
+              +{formatAED(jahedBalance)}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              Money collected from clients
+              Total Client Bill - Nabta Bill
             </p>
           </div>
         </div>
 
-        {/* 3. Expenses/Vouchers (Deduct) */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
+        {/* 3. Client No Pay */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-rose-500/30 dark:border-rose-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              3. Expenses
-            </span>
-            <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
-              (− Deduct)
+              3. Client No Pay
             </span>
           </div>
 
           <div className="mt-3">
             <p className="text-2xl font-black font-mono text-rose-500 dark:text-rose-400">
-              {formatAED(paidAmount)}
+              {formatAED(clientNoPay)}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              {dayPayments.length} payment {dayPayments.length === 1 ? 'record' : 'records'}
+              Outstanding debt owed by clients
             </p>
           </div>
         </div>
 
-        {/* 4. Nabta Today Balance (Result) */}
+        {/* 4. Client Payments / Adjustments */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-amber-500/30 dark:border-amber-500/20 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              4. Client Paid Amount
+            </span>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
+              {formatAED(ordersPaid)}
+            </p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              Actual money received & added to Nabta
+            </p>
+          </div>
+        </div>
+
+        {/* 5. Nabta Today Balance (Result) */}
         <div className={`p-5 rounded-2xl border shadow-lg flex flex-col justify-between ${
           isTodayBalancePositive
             ? 'bg-gradient-to-br from-emerald-950/80 to-emerald-900/90 border-emerald-500/50 text-emerald-100 shadow-emerald-950/30'
@@ -188,10 +204,10 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold uppercase tracking-wider opacity-90">
-              4. Nabta Balance
+              5. Next Nabta Balance
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/20">
-              Today
+              Result
             </span>
           </div>
 
@@ -200,28 +216,7 @@ export default function DaySummaryCard({ onOpenPaymentModal }: DaySummaryCardPro
               {formatAED(todayBalance)}
             </p>
             <p className="text-[11px] opacity-80 mt-1 font-medium">
-              = Prev + Payments - Exp
-            </p>
-          </div>
-        </div>
-
-        {/* 5. Jahed Balance (No Pay) */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-amber-500/30 dark:border-amber-500/20 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              5. Jahed Balance
-            </span>
-            <span className="text-xs font-bold text-amber-500 dark:text-amber-400">
-              (No Pay)
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
-              {formatAED(jahedBalance)}
-            </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              Outstanding debt owed by clients
+              After deducting {formatAED(paidAmount)} expenses
             </p>
           </div>
         </div>
