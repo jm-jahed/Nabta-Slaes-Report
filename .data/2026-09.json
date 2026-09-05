@@ -1,170 +1,90 @@
 {
   "orders": [
     {
-      "id": "fb35ec73-b046-4fdb-ade6-113e3480533f",
-      "date": "2026-09-01",
-      "client_name": "Khalifa Sharjah",
-      "qty": 70,
-      "cost_price": 3,
-      "client_price": 3.5,
-      "nabta_bill": 210,
-      "client_bill": 245,
-      "jahed_balance": 35,
-      "notes": "Cash",
-      "paid_status": "Paid",
-      "amount_received": 245,
-      "created_at": "2026-09-04T23:03:10Z",
-      "updated_at": "2026-09-05T00:14:15.377Z"
-    },
-    {
-      "id": "9be5dd8f-5e01-4c4d-a51a-abf23b1a4ef1",
-      "date": "2026-09-01",
-      "client_name": "Al Mallah",
-      "qty": 25,
-      "cost_price": 4,
-      "client_price": 4.5,
-      "nabta_bill": 100,
-      "client_bill": 112.5,
-      "jahed_balance": 12.5,
-      "notes": "Cash",
-      "paid_status": "Paid",
-      "amount_received": 112.5,
-      "created_at": "2026-09-04T23:03:10Z",
-      "updated_at": "2026-09-05T00:14:32.145Z"
-    },
-    {
-      "id": "1a213a07-9419-4e39-b358-319368050d03",
+      "id": "133e713f-e9b7-47bc-b640-0f75af6d1b82",
       "date": "2026-09-01",
       "client_name": "Abu Al Joud",
       "qty": 25,
       "cost_price": 4,
-      "client_price": 4.5,
       "nabta_bill": 100,
       "client_bill": 112.5,
       "jahed_balance": 12.5,
-      "notes": "Cash",
-      "paid_status": "Paid",
+      "notes": "",
       "amount_received": 112.5,
-      "created_at": "2026-09-04T23:03:10Z",
-      "updated_at": "2026-09-05T00:14:46.391Z"
+      "created_at": "2026-09-05T01:34:49.902Z"
     },
     {
-      "id": "9be4a1bc-fbf7-4c4f-bdde-63292dcae42d",
+      "id": "6e6ed6a0-c238-418c-a5ec-a56da28fff36",
+      "date": "2026-09-01",
+      "client_name": "Al Mallah",
+      "qty": 25,
+      "cost_price": 4,
+      "nabta_bill": 100,
+      "client_bill": 112.5,
+      "jahed_balance": 12.5,
+      "notes": "",
+      "amount_received": 112.5,
+      "created_at": "2026-09-05T01:34:49.903Z"
+    },
+    {
+      "id": "1662cbec-2119-4a3e-be7d-2ee77d157c3b",
+      "date": "2026-09-01",
+      "client_name": "Khalifa Sharjah",
+      "qty": 70,
+      "cost_price": 3,
+      "nabta_bill": 210,
+      "client_bill": 245,
+      "jahed_balance": 35,
+      "notes": "",
+      "amount_received": 245,
+      "created_at": "2026-09-05T01:34:49.903Z"
+    },
+    {
+      "id": "965cff8a-864b-45fa-bb33-33adbeaad7f3",
       "date": "2026-09-01",
       "client_name": "Xender Peeled",
       "qty": 120,
       "cost_price": 3.6,
-      "client_price": 4,
       "nabta_bill": 432,
       "client_bill": 480,
       "jahed_balance": 48,
-      "notes": "Bank",
-      "paid_status": "Unpaid",
-      "amount_received": 0,
-      "created_at": "2026-09-04T23:03:11Z",
-      "updated_at": "2026-09-05T00:16:23.711Z"
+      "notes": "",
+      "amount_received": 480,
+      "created_at": "2026-09-05T01:34:49.903Z"
     }
   ],
   "payments": [],
-  "clients": [
-    {
-      "id": "f4b0c652-d9a5-44c3-a251-d28c45bfaa85",
-      "name": "Test Client 1788566962184",
-      "created_at": "2026-09-05T00:09:21.356185+00:00"
-    },
-    {
-      "id": "0d3996f6-a119-40dc-96ed-bf399fd69bba",
-      "name": "Xender Peeled",
-      "created_at": "2026-09-05T00:13:59.568831+00:00"
-    },
-    {
-      "id": "9e45bf38-c759-49d7-b4f7-3854cf73eb93",
-      "name": "Khalifa Sharjah",
-      "created_at": "2026-09-05T00:14:17.269062+00:00"
-    },
-    {
-      "id": "ce9bfa8c-4295-4b77-8cdf-ac2a0eed0bed",
-      "name": "Al Mallah",
-      "created_at": "2026-09-05T00:14:34.095704+00:00"
-    },
-    {
-      "id": "3cea47ef-ddb3-4ac4-8b09-8dd471eb31c9",
-      "name": "Abu Al Joud",
-      "created_at": "2026-09-05T00:14:47.469309+00:00"
-    }
-  ],
   "day_summaries": [
     {
-      "date": "2026-09-03",
-      "nabta_yesterday_balance": -164.2,
-      "jahed_balance": 0,
-      "paid": 0,
-      "nabta_today_balance": -164.2,
-      "notes": "",
-      "updated_at": "2026-09-04T23:45:47.485Z"
-    },
-    {
-      "date": "2026-09-04",
-      "nabta_yesterday_balance": -164.2,
-      "jahed_balance": 40,
-      "paid": 0,
-      "nabta_today_balance": -204.2,
-      "notes": "",
-      "updated_at": "2026-09-04T23:46:06.666Z"
-    },
-    {
-      "date": "2026-09-05",
-      "nabta_yesterday_balance": -164.2,
-      "jahed_balance": 0,
-      "paid": 0,
-      "nabta_today_balance": -164.2,
-      "notes": "",
-      "updated_at": "2026-09-05T00:36:33.485Z"
-    },
-    {
-      "date": "2026-09-02",
-      "nabta_yesterday_balance": -164.2,
-      "jahed_balance": 0,
-      "paid": 0,
-      "nabta_today_balance": -164.2,
-      "notes": "",
-      "updated_at": "2026-09-05T00:36:36.106Z"
-    },
-    {
-      "date": "2026-08-31",
-      "nabta_yesterday_balance": 0,
-      "jahed_balance": 0,
-      "paid": 0,
-      "nabta_today_balance": 0,
-      "notes": "",
-      "updated_at": "2026-09-05T00:36:36.695Z"
-    },
-    {
       "date": "2026-09-01",
-      "nabta_yesterday_balance": -56.2,
+      "nabta_yesterday_balance": -56,
       "jahed_balance": 108,
       "paid": 0,
-      "nabta_today_balance": 413.8,
+      "nabta_today_balance": -164,
       "notes": "",
-      "updated_at": "2026-09-05T00:36:36.553Z"
+      "updated_at": "2026-09-05T01:34:49.903Z"
+    }
+  ],
+  "clients": [
+    {
+      "id": "66ee2be7-aee2-4bfe-b3eb-a607fe4eefdf",
+      "name": "Abu Al Joud",
+      "created_at": "2026-09-05T01:34:49.903Z"
     },
     {
-      "date": "2026-08-30",
-      "nabta_yesterday_balance": 0,
-      "jahed_balance": 0,
-      "paid": 0,
-      "nabta_today_balance": 0,
-      "notes": "",
-      "updated_at": "2026-09-05T00:36:37.375Z"
+      "id": "9c28d024-94ab-4a3b-8f65-2311db9f6ecb",
+      "name": "Al Mallah",
+      "created_at": "2026-09-05T01:34:49.903Z"
     },
     {
-      "date": "2026-08-29",
-      "nabta_yesterday_balance": 0,
-      "jahed_balance": 0,
-      "paid": 0,
-      "nabta_today_balance": 0,
-      "notes": "",
-      "updated_at": "2026-09-05T00:36:40.990Z"
+      "id": "5b97fba5-f335-4d3d-850c-958d00eba4a7",
+      "name": "Khalifa Sharjah",
+      "created_at": "2026-09-05T01:34:49.903Z"
+    },
+    {
+      "id": "d7747b45-9042-49bc-a6c6-ffe937469733",
+      "name": "Xender Peeled",
+      "created_at": "2026-09-05T01:34:49.903Z"
     }
   ]
 }
