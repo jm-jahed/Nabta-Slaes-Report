@@ -80,7 +80,7 @@ export async function GET(req: Request) {
 
       const nabta_today_balance = summaries[d]?.next_day_balance !== undefined
         ? Number(summaries[d].next_day_balance)
-        : Number((nabta_yesterday_balance - jahed_balance).toFixed(2));
+        : Number((nabta_yesterday_balance - jahed_balance + paid).toFixed(2));
 
       runningBalance = nabta_today_balance;
 

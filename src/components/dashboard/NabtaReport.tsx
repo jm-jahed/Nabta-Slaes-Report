@@ -164,8 +164,8 @@ export default function NabtaReport() {
           });
         }
 
-        if (day.summary.paid > 0) {
-          summaryLines.push(`Deposit: ${(-day.summary.paid).toFixed(2)} (${day.summary.paid_reason})`);
+        if (day.summary.paid !== 0) {
+          summaryLines.push(`Adjustment: ${day.summary.paid.toFixed(2)} (${day.summary.paid_reason})`);
         }
 
         summaryLines.push(`Nabta ${format(parseISO(day.date), 'dd-MM-yy')} Balance: ${day.summary.nabta_today_balance.toFixed(2)}`);
@@ -636,13 +636,13 @@ export default function NabtaReport() {
                         ))}
 
                         {/* Paid Amount (if any) */}
-                        {day.summary.paid > 0 && (
+                        {day.summary.paid !== 0 && (
                           <tr className="hover:bg-slate-800/30 transition-colors">
                             <td className="py-2.5 px-4 font-bold text-white print:text-black">
-                              Deposit {day.summary.paid_reason && day.summary.paid_reason !== 'No payments recorded' ? `(${day.summary.paid_reason})` : ''}
+                              Adjustment {day.summary.paid_reason && day.summary.paid_reason !== 'No payments recorded' ? `(${day.summary.paid_reason})` : ''}
                             </td>
                             <td className="py-2.5 px-4 text-right font-mono font-bold text-white print:text-black">
-                              {formatAED(-day.summary.paid)}
+                              {formatAED(day.summary.paid > 0 ? day.summary.paid : day.summary.paid)}
                             </td>
                           </tr>
                         )}
