@@ -24,6 +24,11 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
+  // Handle broken /settings route
+  if (pathname === '/settings') {
+    return NextResponse.redirect(new URL('/', req.url));
+  }
+
   try {
     const session = JSON.parse(sessionCookie.value);
     const role = session.role;
